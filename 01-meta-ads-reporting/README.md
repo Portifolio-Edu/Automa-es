@@ -1,17 +1,31 @@
-# Meta Ads Project
+# 📊 Relatório Semanal Meta Ads — 5 Clientes
 
 ## Overview
-The Meta Ads project is designed to provide powerful advertising solutions using the Meta Ads platform. It aims to streamline the process of setting up, managing, and analyzing advertising campaigns.
+Workflow n8n que coleta métricas de 5 contas Meta Ads via Facebook Graph API v20, gera análise com GPT-4o e envia relatório via WhatsApp (Evolution API) todo domingo às 8h.
 
-## Features
-- **Campaign Management**: Tools for creating and managing advertising campaigns across various channels.
-- **Analytics Dashboard**: Comprehensive analytics to measure ad performance and ROI.
-- **Targeting Options**: Advanced targeting features to reach the intended audience effectively.
+## 🎯 Problema Resolvido
+- 6h/semana montando relatórios manualmente
+- Dados dispersos sem padronização
+- Erros humanos em CPL, CTR e ROAS
 
-## Getting Started
-1. Clone the repository: `git clone https://github.com/Portifolio-Edu/Automa-es.git`
-2. Navigate to the project directory: `cd Automa-es/01-meta-ads-reporting`
-3. Follow the instructions in the documentation to set up the environment.
+## ✅ Fluxo Node-a-Node
+1. Schedule Trigger → domingo 08:00 (America/Sao_Paulo)
+2. HTTP Request Facebook Graph API → métricas por ad_account_id (7 dias)
+3. Loop Over Items → itera cada cliente
+4. Code Node JS → normaliza, calcula WoW%, formata BRL
+5. GPT-4o → análise textual + recomendações
+6. Merge → consolida dados + análise
+7. Evolution API → WhatsApp para cliente/grupo
+8. Google Sheets → histórico/auditoria
+9. Error Handler → fallback + alerta operador
 
-## License
-This project is licensed under the MIT License.
+## 🛠️ Stack
+n8n · Facebook Graph API v20 · GPT-4o · Evolution API · Google Sheets · JavaScript
+
+## 📈 Resultados
+| Métrica | Antes | Depois |
+|---|---|---|
+| Tempo de relatório | 6h/semana | 0 (automático) |
+| Erros de cálculo | recorrentes | zero |
+| Custo | R$240/mês | R$12/mês |
+| ROI | — | 529% |
