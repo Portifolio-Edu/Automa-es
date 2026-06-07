@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  video-cutter:
+    image: video-cutter:latest
+    ports:
+      - "8000:8000"
+    environment:
+      SILENCE_THRESHOLD: "${SILENCE_THRESHOLD:--40}"
+      SILENCE_DURATION: "${SILENCE_DURATION:-0.5}"
+      MIN_CLIP_DURATION: "${MIN_CLIP_DURATION:-1.0}"
+      DRIVE_FOLDER_ID: "${DRIVE_FOLDER_ID}"
+      GOOGLE_CREDENTIALS_JSON: "${GOOGLE_CREDENTIALS_JSON}"
+    volumes:
+      - type: bind
+        source: /tmp/video-cutter
+        target: /tmp/video-cutter
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+      resources:
+        limits:
+          cpus: "2"
+          memory: 2G
+    networks:
+      - video-net
+
+networks:
+  video-net:
+    driver: overlay
