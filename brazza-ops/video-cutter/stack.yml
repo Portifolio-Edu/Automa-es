@@ -6,11 +6,17 @@ services:
     ports:
       - "8000:8000"
     environment:
-      SILENCE_THRESHOLD: "${SILENCE_THRESHOLD:--40}"
-      SILENCE_DURATION: "${SILENCE_DURATION:-0.5}"
-      MIN_CLIP_DURATION: "${MIN_CLIP_DURATION:-1.0}"
-      DRIVE_FOLDER_ID: "${DRIVE_FOLDER_ID}"
-      GOOGLE_CREDENTIALS_JSON: "${GOOGLE_CREDENTIALS_JSON}"
+      # FFmpeg tuning
+      SILENCE_THRESHOLD:  "${SILENCE_THRESHOLD:--40}"
+      SILENCE_DURATION:   "${SILENCE_DURATION:-0.5}"
+      MIN_CLIP_DURATION:  "${MIN_CLIP_DURATION:-1.0}"
+      # Google OAuth2
+      GOOGLE_CLIENT_ID:     "${GOOGLE_CLIENT_ID}"
+      GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+      GOOGLE_API_KEY:       "${GOOGLE_API_KEY:-}"
+      # App
+      APP_URL:    "${APP_URL:-http://localhost:8000}"
+      SECRET_KEY: "${SECRET_KEY}"
     volumes:
       - type: bind
         source: /tmp/video-cutter

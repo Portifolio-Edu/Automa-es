@@ -1,37 +1,37 @@
-import json
-import os
-
-from google.oauth2.service_account import Credentials
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-
-_SCOPES = ["https://www.googleapis.com/auth/drive.file"]
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
 
 
-def _service(credentials_json: str):
-    creds = Credentials.from_service_account_info(
-        json.loads(credentials_json),
-        scopes=_SCOPES,
-    )
-    return build("drive", "v3", credentials=creds)
+def _svc(creds: Credentials):
+    return build("drive", "v3", credentials=creds, cache_discovery=False)
 
 
-def upload_to_drive(filepath: str, folder_id: str, credentials_json: str) -> str:
-    svc = _service(credentials_json)
+def download_file(file_id: str, dest_path: str, creds: Credentials) -> None:
+    request = _svc(creds).files().get_media(fileId=file_id)
+    with open(dest_path, "wb") as fh:
+        dl = MediaIoBaseDownload(fh, request, chunksize=16 * 1024 * 1024)
+        done = False
+        while not done:
+            _, done = dl.next_chunk()
 
-    file_id = (
-        svc.files()
-        .create(
-            body={"name": os.path.basename(filepath), "parents": [folder_id]},
-            media_body=MediaFileUpload(filepath, resumable=True),
-            fields="id,webViewLink",
-        )
-        .execute()["id"]
-    )
 
-    svc.permissions().create(
-        fileId=file_id,
-        body={"type": "anyone", "role": "reader"},
+def create_folder(name: str, creds: Credentials) -> tuple[str, str]:
+    svc = _svc(creds)
+    f = svc.files().create(
+        body={"name": name, "mimeType": "application/vnd.google-apps.folder"},
+        fields="id,webViewLink",
     ).execute()
+    folder_id = f["id"]
+    folder_url = f.get(
+        "webViewLink", f"https://drive.google.com/drive/folders/{folder_id}"
+    )
+    return folder_id, folder_url
 
-    return f"https://drive.google.com/file/d/{file_id}/view"
+
+def upload_clip(filepath: str, folder_id: str, name: str, creds: Credentials) -> None:
+    _svc(creds).files().create(
+        body={"name": name, "parents": [folder_id]},
+        media_body=MediaFileUpload(filepath, mimetype="video/mp4", resumable=True),
+        fields="id",
+    ).execute()
