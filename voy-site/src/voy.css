@@ -1,27 +1,29 @@
 /* ============================================================
-   VOY COMPANY — Dossiê de Missão
+   VOY COMPANY — Dossiê de Missão em Espaço Profundo
    Paleta:
-     Papel de Missão  #F4F1E8   fundo dominante (documento impresso)
-     Tinta Indigo     #1D1EB4   a cor do logo, usada como tinta
-     Tinta Profunda   #181850   corpo de texto longo
-     Espaço           #08081F   fundo das seções finais
-     Lima Voy         #C6FC00   marcação: sonda, estados ativos, grifos
+     Espaço           #050514   fundo dominante (espaço profundo)
+     Nebulosa         #1D1EB4   o indigo do logo, irradiando no fundo
+     Papel de Missão  #F4F1E8   tinta clara: texto, traços, documentos
+     Lima Voy         #C6FC00   assinatura: sonda, grifos, estados ativos
+     Verde Asterisco  #4CD414   par do lima no glow do asterisco da marca
      Ouro do Disco    #C9A227   exclusivo do Golden Record (CTA)
    ============================================================ */
 
 :root {
+  --espaco: #050514;
+  --espaco-alto: #0b0b28;
+  --nebulosa: #1d1eb4;
+  --indigo-claro: #7476ee;
   --papel: #f4f1e8;
-  --papel-alto: #fbf9f3;
   --tinta: #1d1eb4;
   --tinta-profunda: #181850;
-  --espaco: #08081f;
   --lima: #c6fc00;
+  --verde: #4cd414;
   --ouro: #c9a227;
-  --ouro-claro: #e3c568;
-  --tinta-rota-escuro: #9b9cf8;
-  --hairline: rgba(29, 30, 180, 0.22);
-  --hairline-forte: rgba(29, 30, 180, 0.45);
-  --hairline-clara: rgba(244, 241, 232, 0.25);
+  --texto: rgba(244, 241, 232, 0.82);
+  --texto-suave: rgba(244, 241, 232, 0.6);
+  --hairline: rgba(244, 241, 232, 0.14);
+  --hairline-forte: rgba(244, 241, 232, 0.3);
   --f-display: 'Chillax', 'Satoshi', sans-serif;
   --f-body: 'Satoshi', system-ui, sans-serif;
   --f-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -37,6 +39,16 @@
 
 html {
   scroll-behavior: smooth;
+  background: var(--espaco);
+}
+
+/* quando o Lenis assume o scroll, o smooth nativo sai da frente */
+html.lenis {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -53,8 +65,12 @@ html {
 }
 
 body {
-  background: var(--papel);
-  color: var(--tinta-profunda);
+  background:
+    radial-gradient(1100px 780px at 82% -12%, rgba(29, 30, 180, 0.34), transparent 62%),
+    radial-gradient(900px 720px at -12% 34%, rgba(29, 30, 180, 0.2), transparent 60%),
+    radial-gradient(1000px 900px at 108% 78%, rgba(74, 46, 178, 0.16), transparent 62%),
+    var(--espaco);
+  color: var(--texto);
   font-family: var(--f-body);
   font-size: 1.0625rem;
   line-height: 1.6;
@@ -75,47 +91,76 @@ a {
   overflow-x: clip;
 }
 
-/* A Rota — o SVG que costura a página inteira */
+/* ---------- atmosfera: estrelas + grão ---------- */
+
+.voy-estrelas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.voy-grao {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.glow-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 620px;
+  height: 620px;
+  border-radius: 50%;
+  z-index: 30;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background: radial-gradient(circle, rgba(198, 252, 0, 0.055), transparent 62%);
+  will-change: transform;
+}
+
+/* ---------- A Rota ---------- */
+
 .rota-svg {
   position: absolute;
   top: 0;
   left: 0;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
   overflow: visible;
 }
 
 .rota-linha {
   fill: none;
+  stroke: var(--indigo-claro);
   stroke-width: 1.5;
+  opacity: 0.9;
 }
 
-.rota-node {
-  fill: var(--papel);
-  stroke: var(--tinta);
-  stroke-width: 1.5;
-  transition: fill 0.4s ease;
-}
-
-.rota-node.passou {
-  fill: var(--lima);
-}
-
+.rota-node,
 .rota-wp {
-  fill: var(--papel);
-  stroke: var(--tinta);
+  fill: var(--espaco);
+  stroke: var(--indigo-claro);
   stroke-width: 1.5;
-  transition: fill 0.4s ease;
+  transition: fill 0.4s ease, stroke 0.4s ease;
 }
 
+.rota-node.passou,
 .rota-wp.passou {
   fill: var(--lima);
+  stroke: var(--lima);
 }
 
 .rota-sonda {
   fill: var(--lima);
-  stroke: var(--tinta);
+  stroke: var(--espaco);
   stroke-width: 1.5;
+  filter: drop-shadow(0 0 7px rgba(198, 252, 0, 0.9));
 }
 
 .rota-espiral {
@@ -125,7 +170,16 @@ a {
   opacity: 0.9;
 }
 
-/* conteúdo acima da linha */
+.disco-rot {
+  animation: girar 90s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .voy-secao-inner {
   position: relative;
   z-index: 2;
@@ -133,6 +187,56 @@ a {
   margin: 0 auto;
   padding-left: var(--gutter);
   padding-right: var(--gutter);
+}
+
+/* ---------- revelação por scroll ---------- */
+
+[data-rev] {
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+[data-rev].rev-on {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-rev] {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* diagramas se desenham quando entram em cena */
+.diagrama :is(path, line, circle, polyline):not(.pt) {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+
+[data-rev].rev-on .diagrama :is(path, line, circle, polyline):not(.pt) {
+  animation: tracar 1.6s 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.diagrama .pt {
+  opacity: 0;
+}
+
+[data-rev].rev-on .diagrama .pt {
+  animation: aparecer 0.5s 1.3s ease forwards;
+}
+
+@keyframes tracar {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes aparecer {
+  to {
+    opacity: 1;
+  }
 }
 
 /* ---------- utilitários de documento ---------- */
@@ -143,7 +247,7 @@ a {
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--tinta);
+  color: var(--papel);
   display: inline-flex;
   align-items: baseline;
   gap: 0.75em;
@@ -154,20 +258,81 @@ a {
   width: 0.55em;
   height: 0.55em;
   background: var(--lima);
-  border: 1px solid var(--tinta);
+  box-shadow: 0 0 8px rgba(198, 252, 0, 0.7);
   align-self: center;
 }
 
-.escuro .carimbo {
+.grifo {
+  background: var(--lima);
+  color: var(--tinta);
+  padding: 0 0.1em;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+/* ---------- marca ---------- */
+
+.voy-marca {
+  color: var(--papel);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.voy-marca .glifo {
+  height: 1.5rem;
+  width: auto;
+  display: block;
+}
+
+.voy-marca span {
+  font-family: var(--f-mono);
+  font-weight: 500;
+  font-size: 0.66rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.logo-eco {
+  position: relative;
+  display: inline-block;
   color: var(--papel);
 }
 
-.escuro .carimbo::before {
-  border-color: var(--papel);
+.logo-eco .glifo {
+  height: clamp(3.2rem, 6vw, 4.6rem);
+  width: auto;
+  display: block;
 }
 
-.grifo {
-  background: linear-gradient(transparent 58%, var(--lima) 58%, var(--lima) 92%, transparent 92%);
+.logo-eco .ecos {
+  position: absolute;
+  right: -0.2em;
+  bottom: 92%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1em;
+  font-family: var(--f-body);
+  font-weight: 700;
+  font-size: clamp(0.8rem, 1.4vw, 1.05rem);
+  letter-spacing: 0.42em;
+  line-height: 1;
+  text-transform: lowercase;
+}
+
+.logo-eco .ecos i {
+  font-style: normal;
+}
+
+.logo-eco .ecos i:nth-child(1) {
+  opacity: 0.18;
+}
+
+.logo-eco .ecos i:nth-child(2) {
+  opacity: 0.45;
 }
 
 /* ---------- nav ---------- */
@@ -176,8 +341,8 @@ a {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(244, 241, 232, 0.92);
-  backdrop-filter: blur(8px);
+  background: rgba(5, 5, 20, 0.72);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hairline);
 }
 
@@ -188,35 +353,6 @@ a {
   display: flex;
   align-items: center;
   gap: 1.5rem;
-}
-
-.voy-marca {
-  font-family: var(--f-display);
-  font-weight: 600;
-  font-size: 1.05rem;
-  letter-spacing: 0.02em;
-  color: var(--tinta);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
-}
-
-.voy-marca i {
-  width: 0.6em;
-  height: 0.6em;
-  background: var(--tinta);
-  display: inline-block;
-}
-
-.voy-marca span {
-  font-family: var(--f-mono);
-  font-weight: 500;
-  font-size: 0.62em;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--tinta-profunda);
 }
 
 .voy-nav-links {
@@ -236,15 +372,17 @@ a {
 
 .voy-nav-links a {
   text-decoration: none;
-  color: var(--tinta-profunda);
+  color: var(--texto);
   white-space: nowrap;
   border-bottom: 1px solid transparent;
   padding: 0.2rem 0;
+  transition: color 0.25s ease, border-color 0.25s ease;
 }
 
-.voy-nav-links a:hover {
-  color: var(--tinta);
-  border-bottom-color: var(--tinta);
+.voy-nav-links a:hover,
+.voy-nav-links a.ativo {
+  color: var(--lima);
+  border-bottom-color: var(--lima);
 }
 
 /* ---------- botões ---------- */
@@ -260,25 +398,26 @@ a {
   align-items: center;
   gap: 0.6em;
   padding: 0.9em 1.6em;
-  border: 1.5px solid var(--tinta);
-  color: var(--tinta);
+  border: 1.5px solid var(--papel);
+  color: var(--papel);
   background: transparent;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, color 0.18s ease;
   white-space: nowrap;
 }
 
 .botao:hover {
   transform: translate(-2px, -2px);
-  box-shadow: 3px 3px 0 var(--tinta);
+  box-shadow: 3px 3px 0 var(--papel), 0 0 24px rgba(244, 241, 232, 0.15);
 }
 
 .botao-primario {
-  background: var(--tinta);
-  color: var(--papel);
+  background: var(--lima);
+  border-color: var(--lima);
+  color: var(--espaco);
 }
 
 .botao-primario:hover {
-  box-shadow: 3px 3px 0 var(--lima);
+  box-shadow: 3px 3px 0 var(--papel), 0 0 30px rgba(198, 252, 0, 0.35);
 }
 
 .botao-nav {
@@ -286,37 +425,20 @@ a {
   font-size: 0.72rem;
 }
 
-.escuro .botao {
-  border-color: var(--papel);
-  color: var(--papel);
-}
-
-.escuro .botao:hover {
-  box-shadow: 3px 3px 0 var(--papel);
-}
-
-.escuro .botao-primario {
-  background: var(--lima);
-  border-color: var(--lima);
-  color: var(--espaco);
-}
-
-.escuro .botao-primario:hover {
-  box-shadow: 3px 3px 0 var(--papel);
-}
-
 /* ---------- hero / lançamento ---------- */
 
 .hero {
   border-bottom: 1px solid var(--hairline);
+  overflow: clip;
 }
 
 .hero .voy-secao-inner {
   padding-top: clamp(3rem, 8vh, 6rem);
   padding-bottom: clamp(4rem, 12vh, 8rem);
   display: grid;
-  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   gap: 2rem;
+  align-items: center;
 }
 
 .hero-selo {
@@ -324,8 +446,9 @@ a {
   font-size: 0.72rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--tinta);
+  color: var(--papel);
   border: 1px solid var(--hairline-forte);
+  background: rgba(11, 11, 40, 0.5);
   display: inline-flex;
   align-items: center;
   gap: 0.7em;
@@ -338,17 +461,17 @@ a {
   width: 0.5em;
   height: 0.5em;
   background: var(--lima);
-  border: 1px solid var(--tinta);
+  box-shadow: 0 0 8px rgba(198, 252, 0, 0.8);
 }
 
 .hero h1 {
   font-family: var(--f-display);
   font-weight: 600;
-  font-size: clamp(2.4rem, 5.2vw, 4.9rem);
-  line-height: 1.02;
+  font-size: clamp(2.4rem, 5vw, 4.7rem);
+  line-height: 1.03;
   text-transform: uppercase;
   letter-spacing: -0.01em;
-  color: var(--tinta);
+  color: var(--papel);
   max-width: 13em;
 }
 
@@ -366,25 +489,90 @@ a {
   gap: 1rem;
 }
 
-/* lado direito do hero: a plataforma de lançamento */
-.hero-plataforma {
+/* a cena: astronauta + asteroides + glow, com parallax */
+.hero-cena {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 4rem;
+  min-height: clamp(380px, 46vw, 560px);
 }
 
-.hero-mira {
-  width: clamp(120px, 14vw, 190px);
+.hero-cena > * {
+  position: absolute;
+  will-change: transform;
+}
+
+.cena-glow {
+  width: 130%;
+  top: 4%;
+  left: -12%;
+  opacity: 0.85;
+}
+
+.cena-astro-wrap {
+  width: clamp(240px, 26vw, 400px);
+  top: 8%;
+  left: 16%;
+}
+
+.cena-astro {
+  width: 100%;
   height: auto;
-  color: var(--tinta);
+  color: var(--papel);
+  transform: rotate(-9deg);
+  animation: flutuar 7s ease-in-out infinite alternate;
 }
 
-/* ---------- seções de documento ---------- */
+.cena-ast {
+  color: var(--papel);
+}
+
+.cena-ast svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.cena-a1 {
+  width: clamp(64px, 7vw, 104px);
+  top: -2%;
+  left: -4%;
+  animation: flutuar 9s 0.6s ease-in-out infinite alternate;
+}
+
+.cena-a2 {
+  width: clamp(88px, 10vw, 150px);
+  top: 56%;
+  right: -2%;
+  animation: flutuar 8s 1.2s ease-in-out infinite alternate;
+}
+
+.cena-a3 {
+  width: clamp(48px, 5.4vw, 80px);
+  bottom: -4%;
+  left: 6%;
+  animation: flutuar 10s 0.3s ease-in-out infinite alternate;
+}
+
+.cena-a4 {
+  width: clamp(30px, 3.4vw, 52px);
+  top: 30%;
+  right: 14%;
+  animation: flutuar 6.5s 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes flutuar {
+  from {
+    translate: 0 -10px;
+  }
+  to {
+    translate: 0 12px;
+  }
+}
+
+/* ---------- seções ---------- */
 
 .secao {
   border-bottom: 1px solid var(--hairline);
+  position: relative;
 }
 
 .secao .voy-secao-inner {
@@ -406,26 +594,35 @@ a {
   font-family: var(--f-mono);
   font-size: 0.6875rem;
   letter-spacing: 0.14em;
-  color: var(--tinta);
-  opacity: 0.75;
+  color: var(--texto-suave);
   white-space: nowrap;
 }
 
-.escuro .secao-cabeca {
-  border-bottom-color: var(--hairline-clara);
-}
-
-.escuro .secao-cabeca .folha {
-  color: var(--papel);
-}
-
 /* ---------- posicionamento ---------- */
+
+.posicionamento .voy-secao-inner {
+  overflow: visible;
+}
+
+.v-marca-dagua {
+  position: absolute;
+  right: -4%;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 120%;
+  width: auto;
+  color: rgba(244, 241, 232, 0.04);
+  pointer-events: none;
+  z-index: 0;
+}
 
 .posicionamento-grid {
   display: grid;
   grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
   gap: clamp(2rem, 5vw, 5rem);
   align-items: start;
+  position: relative;
+  z-index: 1;
 }
 
 .posicionamento h2 {
@@ -433,13 +630,13 @@ a {
   font-weight: 600;
   font-size: clamp(1.9rem, 3.4vw, 3.1rem);
   line-height: 1.1;
-  color: var(--tinta);
+  color: var(--papel);
 }
 
 .posicionamento-texto {
   font-size: clamp(1.05rem, 1.35vw, 1.25rem);
   line-height: 1.7;
-  border-left: 2px solid var(--tinta);
+  border-left: 2px solid var(--lima);
   padding-left: 1.5rem;
 }
 
@@ -476,18 +673,27 @@ a {
 .diagrama {
   width: clamp(200px, 22vw, 300px);
   height: auto;
-  color: var(--tinta);
+  color: var(--papel);
+  transition: color 0.45s ease, transform 0.6s cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.encontro:hover .diagrama {
+  color: var(--lima);
+  transform: rotate(4deg) scale(1.02);
 }
 
 .diagrama-legenda {
   font-family: var(--f-mono);
   font-size: 0.65rem;
   letter-spacing: 0.2em;
-  color: var(--tinta);
-  opacity: 0.7;
+  color: var(--texto-suave);
+  transition: color 0.45s ease;
 }
 
-/* âncora invisível pro slingshot da Rota */
+.encontro:hover .diagrama-legenda {
+  color: var(--lima);
+}
+
 .encontro-ancora {
   position: absolute;
   top: 42%;
@@ -509,7 +715,7 @@ a {
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--tinta);
+  color: var(--lima);
   display: flex;
   align-items: center;
   gap: 0.9em;
@@ -528,7 +734,7 @@ a {
   font-weight: 600;
   font-size: clamp(1.55rem, 2.6vw, 2.4rem);
   line-height: 1.12;
-  color: var(--tinta);
+  color: var(--papel);
   margin-bottom: 1.1rem;
 }
 
@@ -537,13 +743,14 @@ a {
   font-weight: 500;
   font-size: clamp(1.1rem, 1.6vw, 1.45rem);
   line-height: 1.4;
-  color: var(--tinta-profunda);
+  color: var(--texto);
   margin-bottom: 1.25rem;
 }
 
 .encontro-descricao {
   max-width: 38em;
   margin-bottom: 1.75rem;
+  color: var(--texto-suave);
 }
 
 .encontro-entregaveis {
@@ -565,15 +772,24 @@ a {
   content: '▸';
   position: absolute;
   left: 0;
-  color: var(--tinta);
+  color: var(--lima);
 }
 
+/* documento de papel colado no dossiê */
 .encontro-ideal {
-  border: 1px solid var(--hairline-forte);
+  border: 1px solid rgba(29, 30, 180, 0.25);
   padding: 1rem 1.25rem;
   max-width: 40em;
   font-size: 0.95rem;
-  background: var(--papel-alto);
+  background: var(--papel);
+  color: var(--tinta-profunda);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+  transform: rotate(-0.4deg);
+  transition: transform 0.4s ease;
+}
+
+.encontro:hover .encontro-ideal {
+  transform: rotate(0deg);
 }
 
 .encontro-ideal b {
@@ -589,10 +805,31 @@ a {
 
 /* ---------- resumo do sistema ---------- */
 
+.resumo {
+  overflow: clip;
+}
+
 .resumo .voy-secao-inner {
   text-align: center;
   padding-top: clamp(4rem, 10vh, 7rem);
   padding-bottom: clamp(4rem, 10vh, 7rem);
+}
+
+.resumo-glow {
+  position: absolute;
+  width: clamp(400px, 52vw, 760px);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.resumo h2,
+.resumo p {
+  position: relative;
+  z-index: 1;
 }
 
 .resumo h2 {
@@ -601,7 +838,7 @@ a {
   font-size: clamp(2rem, 4.6vw, 4.2rem);
   line-height: 1.05;
   text-transform: uppercase;
-  color: var(--tinta);
+  color: var(--papel);
   max-width: 14em;
   margin: 0 auto 1.75rem;
 }
@@ -638,15 +875,15 @@ a {
   font-weight: 600;
   font-size: 0.8rem;
   letter-spacing: 0.1em;
-  color: var(--tinta);
-  border: 1.5px solid var(--tinta);
+  color: var(--papel);
+  border: 1.5px solid var(--indigo-claro);
   width: 3.4rem;
   height: 3.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--papel);
+  background: var(--espaco);
   position: relative;
   justify-self: center;
 }
@@ -655,23 +892,13 @@ a {
   font-family: var(--f-display);
   font-weight: 600;
   font-size: clamp(1.25rem, 1.9vw, 1.7rem);
-  color: var(--tinta);
+  color: var(--papel);
   margin-bottom: 0.3rem;
 }
 
 .voo-passo p {
   max-width: 34em;
-}
-
-/* ---------- travessia pro escuro ---------- */
-
-.escuro {
-  background: var(--espaco);
-  color: var(--papel);
-}
-
-.escuro .secao {
-  border-bottom-color: var(--hairline-clara);
+  color: var(--texto-suave);
 }
 
 /* ---------- sinal recebido (prova) ---------- */
@@ -689,13 +916,12 @@ a {
 .sinal-leituras {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--hairline-clara);
+  border-top: 1px solid var(--hairline);
 }
 
 .sinal-leitura {
-  padding: 2rem 1.75rem 2rem 0;
-  border-right: 1px solid var(--hairline-clara);
-  padding-left: 1.75rem;
+  padding: 2rem 1.75rem;
+  border-right: 1px solid var(--hairline);
 }
 
 .sinal-leitura:first-child {
@@ -729,20 +955,35 @@ a {
   font-family: var(--f-mono);
   font-size: 0.8rem;
   line-height: 1.5;
-  color: rgba(244, 241, 232, 0.75);
+  color: var(--texto-suave);
 }
 
-/* ---------- anexo A (dúvidas) ---------- */
+/* ---------- anexo A (dúvidas) — acordeão de documento ---------- */
 
 .anexo-lista {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(2.5rem, 5vw, 4.5rem) clamp(2.5rem, 6vw, 6rem);
+  gap: 1.25rem clamp(2.5rem, 6vw, 6rem);
+  align-items: start;
 }
 
 .anexo-item {
-  border-top: 1px solid var(--hairline-clara);
-  padding-top: 1.4rem;
+  border-top: 1px solid var(--hairline);
+}
+
+.anexo-gatilho {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr) 1.6rem;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1.3rem 0 1.1rem;
 }
 
 .anexo-ref {
@@ -750,22 +991,63 @@ a {
   font-size: 0.65rem;
   letter-spacing: 0.2em;
   color: var(--lima);
-  display: block;
-  margin-bottom: 0.9rem;
 }
 
 .anexo-item h3 {
   font-family: var(--f-display);
   font-weight: 500;
-  font-size: clamp(1.15rem, 1.7vw, 1.45rem);
+  font-size: clamp(1.1rem, 1.6vw, 1.4rem);
   line-height: 1.3;
   color: var(--papel);
-  margin-bottom: 0.7rem;
+  transition: color 0.3s ease;
 }
 
-.anexo-item p {
-  color: rgba(244, 241, 232, 0.78);
+.anexo-gatilho:hover h3 {
+  color: var(--lima);
+}
+
+.anexo-x {
+  position: relative;
+  width: 1rem;
+  height: 1rem;
+  justify-self: end;
+  align-self: center;
+}
+
+.anexo-x::before,
+.anexo-x::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: var(--lima);
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.anexo-x::after {
+  transform: rotate(90deg);
+}
+
+.anexo-item.aberta .anexo-x::after {
+  transform: rotate(0deg);
+}
+
+.anexo-corpo {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.anexo-corpo > div {
+  overflow: hidden;
+}
+
+.anexo-corpo p {
+  color: var(--texto-suave);
   max-width: 36em;
+  padding: 0 0 1.4rem 3.75rem;
 }
 
 /* ---------- golden record / CTA final ---------- */
@@ -807,7 +1089,7 @@ a {
 
 .cta-texto {
   max-width: 32em;
-  color: rgba(244, 241, 232, 0.8);
+  color: var(--texto-suave);
   position: relative;
 }
 
@@ -827,32 +1109,20 @@ a {
 /* ---------- rodapé ---------- */
 
 .rodape {
-  border-top: 1px solid var(--hairline-clara);
+  border-top: 1px solid var(--hairline);
 }
 
 .rodape .voy-secao-inner {
-  padding-top: 2rem;
-  padding-bottom: 2.5rem;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 2rem;
+  align-items: flex-end;
+  gap: 1.5rem 2rem;
   font-family: var(--f-mono);
   font-size: 0.7rem;
   letter-spacing: 0.1em;
-  color: rgba(244, 241, 232, 0.6);
-}
-
-.rodape .voy-marca {
-  color: var(--papel);
-}
-
-.rodape .voy-marca i {
-  background: var(--lima);
-}
-
-.rodape .voy-marca span {
-  color: rgba(244, 241, 232, 0.6);
+  color: var(--texto-suave);
 }
 
 .rodape-direita {
@@ -860,7 +1130,7 @@ a {
   text-transform: uppercase;
 }
 
-/* ---------- telemetria fixa (distância percorrida) ---------- */
+/* ---------- telemetria fixa ---------- */
 
 .telemetria {
   position: fixed;
@@ -870,8 +1140,9 @@ a {
   font-family: var(--f-mono);
   font-size: 0.62rem;
   letter-spacing: 0.18em;
-  color: var(--tinta);
-  background: var(--papel);
+  color: var(--lima);
+  background: rgba(11, 11, 40, 0.8);
+  backdrop-filter: blur(6px);
   border: 1px solid var(--hairline-forte);
   padding: 0.45em 0.9em;
   display: flex;
@@ -883,7 +1154,7 @@ a {
   width: 0.55em;
   height: 0.55em;
   background: var(--lima);
-  border: 1px solid var(--tinta);
+  box-shadow: 0 0 6px rgba(198, 252, 0, 0.8);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -893,24 +1164,28 @@ a {
 }
 
 /* ============================================================
-   BREAKPOINTS — cada um é uma composição, não desktop espremido
+   BREAKPOINTS — cada um é uma composição própria
    ============================================================ */
 
-/* --- 1366 e abaixo: aperta a folha, mantém as duas colunas --- */
 @media (max-width: 1440px) {
   :root {
     --largura: 68rem;
   }
 }
 
-/* --- tablet (≤1024): encontros empilham, diagrama vira vinheta lateral --- */
 @media (max-width: 1024px) {
   .hero .voy-secao-inner {
     grid-template-columns: 1fr;
+    gap: 0;
   }
 
-  .hero-plataforma {
-    display: none;
+  .hero-cena {
+    min-height: clamp(300px, 52vw, 420px);
+    margin-top: 2.5rem;
+  }
+
+  .cena-astro-wrap {
+    left: 28%;
   }
 
   .posicionamento-grid {
@@ -952,7 +1227,7 @@ a {
 
   .sinal-leitura {
     border-right: none;
-    border-bottom: 1px solid var(--hairline-clara);
+    border-bottom: 1px solid var(--hairline);
     padding: 1.75rem 0;
   }
 
@@ -962,10 +1237,15 @@ a {
 
   .anexo-lista {
     grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .v-marca-dagua {
+    height: 90%;
+    right: -18%;
   }
 }
 
-/* --- nav de duas linhas quando a folha estreita --- */
 @media (max-width: 900px) {
   .voy-nav-inner {
     flex-wrap: wrap;
@@ -985,13 +1265,11 @@ a {
   }
 }
 
-/* --- celular (≤600): documento de bolso --- */
 @media (max-width: 600px) {
   body {
     font-size: 1rem;
   }
 
-  /* a Rota vira linha de guia na borda esquerda: o conteúdo respira à direita dela */
   .voy-secao-inner {
     padding-left: calc(var(--gutter) + 1.4rem);
   }
@@ -1003,6 +1281,16 @@ a {
   .hero-acoes .botao {
     width: 100%;
     justify-content: center;
+  }
+
+  .hero-cena {
+    min-height: 300px;
+    margin-top: 2rem;
+  }
+
+  .cena-astro-wrap {
+    width: 210px;
+    left: 20%;
   }
 
   .secao-cabeca {
@@ -1024,6 +1312,14 @@ a {
     width: 2.6rem;
     height: 2.6rem;
     font-size: 0.7rem;
+  }
+
+  .anexo-gatilho {
+    grid-template-columns: 2.2rem minmax(0, 1fr) 1.4rem;
+  }
+
+  .anexo-corpo p {
+    padding-left: 2.95rem;
   }
 
   .cta-disco {
