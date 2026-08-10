@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: system-ui, -apple-system, sans-serif;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: #09090b;
+  color: #fafafa;
+}
+
+#root {
+  min-height: 100vh;
+  width: 100%;
+  max-width: none;
+  border: none;
+}
