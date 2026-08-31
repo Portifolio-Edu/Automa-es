@@ -1,23 +1,20 @@
 #!/usr/bin/env node
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { embed, embeddingsEnabled } from "./embeddings.js";
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-  console.error(
-    "SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY são obrigatórios (veja .env.example)."
-  );
-  process.exit(1);
-}
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { persistSession: false },
-});
+// A Edge Function "memory-api" roda dentro do Supabase e usa a
+// service_role key internamente (injetada automaticamente pelo
+// Supabase, ninguém precisa configurá-la aqui). Este servidor só
+// fala com ela por HTTPS usando a chave pública (anon/publishable)
+// do projeto — por isso os valores abaixo já vêm preenchidos e
+// funcionam sem nenhuma configuração manual.
+const MEMORY_API_URL =
+  process.env.MEMORY_API_URL ||
+  "https://bebewljjouhqwpzmgeks.supabase.co/functions/v1/memory-api";
+const MEMORY_API_KEY =
+  process.env.MEMORY_API_KEY ||
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlYmV3bGpqb3VocXdwem1nZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTgyMTAsImV4cCI6MjEwMzc3NDIxMH0.qkGQffkslopGgvNP3aZbm-ceYhv2AlEmbJef8yOnDDA";
 
 const NODE_TYPES = [
   "note",
@@ -29,6 +26,24 @@ const NODE_TYPES = [
   "automation",
   "session",
 ];
+
+async function callApi(path, { method = "GET", body } = {}) {
+  const res = await fetch(`${MEMORY_API_URL}${path}`, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${MEMORY_API_KEY}`,
+      apikey: MEMORY_API_KEY,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new Error(data?.error || `memory-api respondeu ${res.status}`);
+  }
+  return data;
+}
 
 function jsonResult(data) {
   return { content: [{ type: "text", text: JSON.stringify(data, null, 2) }] };
@@ -57,20 +72,12 @@ server.tool(
     source: z.enum(["manual", "claude", "n8n", "api"]).default("claude"),
     metadata: z.record(z.any()).default({}),
   },
-  async ({ type, title, content, tags, source, metadata }) => {
-    const embedding = await embed(`${title}\n\n${content}`).catch((err) => {
-      console.error("embedding falhou, seguindo sem vetor:", err.message);
-      return null;
-    });
-
-    const { data, error } = await supabase
-      .from("memory_nodes")
-      .insert({ type, title, content, tags, source, metadata, embedding })
-      .select("id, type, title, tags, created_at")
-      .single();
-
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
+  async (input) => {
+    try {
+      return jsonResult(await callApi("/nodes", { method: "POST", body: input }));
+    } catch (err) {
+      return errorResult(err.message);
+    }
   }
 );
 
@@ -84,28 +91,12 @@ server.tool(
     tags: z.array(z.string()).optional(),
     metadata: z.record(z.any()).optional(),
   },
-  async ({ id, title, content, tags, metadata }) => {
-    const patch = {};
-    if (title !== undefined) patch.title = title;
-    if (tags !== undefined) patch.tags = tags;
-    if (metadata !== undefined) patch.metadata = metadata;
-    if (content !== undefined) {
-      patch.content = content;
-      patch.embedding = await embed(`${title ?? ""}\n\n${content}`).catch((err) => {
-        console.error("embedding falhou, seguindo sem vetor:", err.message);
-        return null;
-      });
+  async ({ id, ...patch }) => {
+    try {
+      return jsonResult(await callApi(`/nodes/${id}`, { method: "PATCH", body: patch }));
+    } catch (err) {
+      return errorResult(err.message);
     }
-
-    const { data, error } = await supabase
-      .from("memory_nodes")
-      .update(patch)
-      .eq("id", id)
-      .select("id, type, title, tags, updated_at")
-      .single();
-
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
   }
 );
 
@@ -118,55 +109,30 @@ server.tool(
   },
   async ({ id, title }) => {
     if (!id && !title) return errorResult("informe id ou title");
-
-    let query = supabase.from("memory_nodes").select("*");
-    query = id ? query.eq("id", id) : query.ilike("title", title);
-
-    const { data, error } = await query.limit(1).maybeSingle();
-    if (error) return errorResult(error.message);
-    if (!data) return errorResult("nó não encontrado");
-    return jsonResult(data);
+    try {
+      const path = id ? `/nodes/${id}` : `/nodes?title=${encodeURIComponent(title)}`;
+      return jsonResult(await callApi(path));
+    } catch (err) {
+      return errorResult(err.message);
+    }
   }
 );
 
 server.tool(
   "memory_search",
-  `Busca nós na memória. modo "text" usa full-text (rápido, exato), "semantic" usa embeddings (por significado), "hybrid" combina os dois via Reciprocal Rank Fusion (recomendado). "semantic"/"hybrid" exigem OPENAI_API_KEY configurada no servidor${embeddingsEnabled ? " (disponível)" : " (INDISPONÍVEL — cai para text)"}.`,
+  'Busca nós na memória. modo "text" usa full-text (rápido, exato), "semantic" usa embeddings (por significado), "hybrid" combina os dois via Reciprocal Rank Fusion (recomendado). "semantic"/"hybrid" só funcionam se a Edge Function tiver OPENAI_API_KEY configurada como secret — sem isso, o servidor cai automaticamente para "text".',
   {
     query: z.string().min(1),
     mode: z.enum(["text", "semantic", "hybrid"]).default("hybrid"),
     limit: z.number().int().min(1).max(50).default(10),
     types: z.array(z.enum(NODE_TYPES)).optional(),
   },
-  async ({ query, mode, limit, types }) => {
-    const filterTypes = types && types.length ? types : null;
-    const effectiveMode = mode === "text" || embeddingsEnabled ? mode : "text";
-
-    if (effectiveMode === "text") {
-      const { data, error } = await supabase.rpc("search_memory_nodes", {
-        query,
-        match_count: limit,
-        filter_types: filterTypes,
-      });
-      if (error) return errorResult(error.message);
-      return jsonResult(data);
+  async (input) => {
+    try {
+      return jsonResult(await callApi("/search", { method: "POST", body: input }));
+    } catch (err) {
+      return errorResult(err.message);
     }
-
-    const queryEmbedding = await embed(query);
-    const rpcName = effectiveMode === "semantic" ? "match_memory_nodes" : "hybrid_search_memory";
-    const params =
-      effectiveMode === "semantic"
-        ? { query_embedding: queryEmbedding, match_count: limit, filter_types: filterTypes }
-        : {
-            query,
-            query_embedding: queryEmbedding,
-            match_count: limit,
-            filter_types: filterTypes,
-          };
-
-    const { data, error } = await supabase.rpc(rpcName, params);
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
   }
 );
 
@@ -180,18 +146,12 @@ server.tool(
     weight: z.number().default(1),
     metadata: z.record(z.any()).default({}),
   },
-  async ({ from_id, to_id, relation, weight, metadata }) => {
-    const { data, error } = await supabase
-      .from("memory_edges")
-      .upsert(
-        { from_node: from_id, to_node: to_id, relation, weight, metadata },
-        { onConflict: "from_node,to_node,relation" }
-      )
-      .select()
-      .single();
-
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
+  async (input) => {
+    try {
+      return jsonResult(await callApi("/links", { method: "POST", body: input }));
+    } catch (err) {
+      return errorResult(err.message);
+    }
   }
 );
 
@@ -200,9 +160,11 @@ server.tool(
   "Lista quem aponta para um nó (backlinks), como no painel lateral do Obsidian.",
   { id: z.string().uuid() },
   async ({ id }) => {
-    const { data, error } = await supabase.rpc("get_backlinks", { target_id: id });
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
+    try {
+      return jsonResult(await callApi(`/backlinks/${id}`));
+    } catch (err) {
+      return errorResult(err.message);
+    }
   }
 );
 
@@ -214,12 +176,11 @@ server.tool(
     depth: z.number().int().min(1).max(5).default(2),
   },
   async ({ id, depth }) => {
-    const { data, error } = await supabase.rpc("get_graph_neighborhood", {
-      start_id: id,
-      depth,
-    });
-    if (error) return errorResult(error.message);
-    return jsonResult(data);
+    try {
+      return jsonResult(await callApi(`/graph/${id}?depth=${depth}`));
+    } catch (err) {
+      return errorResult(err.message);
+    }
   }
 );
 

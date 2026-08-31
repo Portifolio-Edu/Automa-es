@@ -246,9 +246,11 @@ language sql stable as $$
 $$;
 
 -- ============================================================
--- RLS: fecha o schema para anon/authenticated. Todo acesso passa
--- pela service_role key (usada pelo servidor MCP e pelo n8n,
--- nunca pela chave anon/pública).
+-- RLS: fecha o schema para anon/authenticated. O único código que
+-- acessa estas tabelas é a Edge Function memory-api, que usa a
+-- service_role key injetada automaticamente pelo Supabase — o
+-- servidor MCP e o n8n falam com ela via HTTP usando só a chave
+-- pública (anon), nunca a service_role.
 -- ============================================================
 alter table public.memory_nodes enable row level security;
 alter table public.memory_edges enable row level security;

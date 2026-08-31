@@ -1,21 +1,21 @@
 # Integração n8n
 
-Os workflows n8n falam com a memória do mesmo jeito que o servidor MCP: via [PostgREST](https://postgrest.org), a API REST que o Supabase já gera automaticamente para as tabelas e funções do schema. Não é preciso subir nenhum serviço extra.
+Os workflows n8n falam com a memória chamando a mesma [Edge Function `memory-api`](../edge-function) que o servidor MCP usa. Não precisa de credencial de banco nem de service_role key — só um HTTP Request node com dois headers fixos.
 
 ## Credencial
 
-Crie uma credencial **Header Auth** (ou use direto o node HTTP Request com header manual) apontando para:
+Crie uma credencial **Header Auth** no n8n (ou use headers manuais no node):
 
-- URL base: `https://<project-ref>.supabase.co/rest/v1`
-- Headers em toda chamada:
-  - `apikey: <SUPABASE_SERVICE_ROLE_KEY>`
-  - `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>`
+- Header 1: `Authorization` = `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJlYmV3bGpqb3VocXdwem1nZWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxOTgyMTAsImV4cCI6MjEwMzc3NDIxMH0.qkGQffkslopGgvNP3aZbm-ceYhv2AlEmbJef8yOnDDA`
+- Header 2: `apikey` = mesmo valor acima
 
-Use sempre a **service_role key** (Project Settings → API), guardada como credencial no n8n — nunca hardcoded no node. O schema tem RLS ativo e nega anon/authenticated de propósito; só a service_role atravessa.
+URL base: `https://bebewljjouhqwpzmgeks.supabase.co/functions/v1/memory-api`
+
+Essa é a chave pública (anon) do projeto — não dá acesso a nada além do que a própria Edge Function decide expor, então não tem problema ela estar aqui no repo.
 
 ## Criar um nó de memória
 
-`POST /memory_nodes`
+`POST {base}/nodes`
 
 ```json
 {
@@ -27,35 +27,35 @@ Use sempre a **service_role key** (Project Settings → API), guardada como cred
 }
 ```
 
-Body do HTTP Request node: JSON acima. Header extra: `Prefer: return=representation` (senão o Supabase responde 201 sem corpo).
+## Atualizar um nó
 
-> Embedding não é gerado aqui — inserts via REST direto não chamam o servidor MCP, então ficam sem vetor semântico (a coluna `embedding` fica null). Isso é ok para full-text (`search_memory_nodes`), mas para entrar na busca semântica/híbrida o nó precisa ser criado/atualizado via `memory_create_node`/`memory_update_node` do MCP (ou você gera o embedding você mesmo e manda no body).
+`PATCH {base}/nodes/{id}` com o mesmo formato de body (só os campos que quer mudar).
 
-## Buscar (full-text)
+## Buscar
 
-`POST /rpc/search_memory_nodes`
+`POST {base}/search`
 
 ```json
-{ "query": "relatório meta ads", "match_count": 10 }
+{ "query": "relatório meta ads", "mode": "text", "limit": 10 }
 ```
 
 ## Backlinks / grafo local
 
-`POST /rpc/get_backlinks`
-```json
-{ "target_id": "<uuid do nó>" }
-```
+`GET {base}/backlinks/{id}`
 
-`POST /rpc/get_graph_neighborhood`
+`GET {base}/graph/{id}?depth=2`
+
+## Criar aresta manual
+
+Para relações que não são "menção no texto" (ex: `depends_on`, `blocks`):
+
+`POST {base}/links`
 ```json
-{ "start_id": "<uuid do nó>", "depth": 2 }
+{ "from_id": "<uuid>", "to_id": "<uuid>", "relation": "depends_on" }
 ```
 
 ## Padrão sugerido de workflow
 
-1. No fim de cada automação relevante (ex: Sophia SDR fechou um lead, Meta Ads gerou um relatório), um node HTTP Request grava um nó em `memory_nodes` com `source: "n8n"` e `[[wikilinks]]` para entidades relacionadas (cliente, projeto).
-2. Um Code node monta o `content` já com os `[[Título]]` corretos — o trigger do banco resolve os backlinks sozinho, não precisa criar a aresta manualmente.
-3. Para relações que não são "menção no texto" (ex: `depends_on`, `blocks`), chame `POST /memory_edges` direto:
-   ```json
-   { "from_node": "<uuid>", "to_node": "<uuid>", "relation": "depends_on" }
-   ```
+1. No fim de cada automação relevante (ex: Sophia SDR fechou um lead, Meta Ads gerou um relatório), um node HTTP Request grava um nó em `/nodes` com `source: "n8n"` e `[[wikilinks]]` para entidades relacionadas (cliente, projeto).
+2. Um Code node monta o `content` já com os `[[Título]]` corretos — a Edge Function resolve os backlinks sozinha, não precisa criar a aresta manualmente.
+3. Para relações que não são "menção no texto", chame `POST {base}/links` direto, como no exemplo acima.
