@@ -1,0 +1,17 @@
+{
+  "name": "memoria-grafo-mcp",
+  "version": "1.0.0",
+  "description": "Servidor MCP para a memória persistente com grafo (busca full-text + semântica + backlinks)",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": {
+    "memoria-grafo-mcp": "src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.23.8"
+  }
+}
