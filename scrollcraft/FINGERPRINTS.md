@@ -28,6 +28,13 @@ changes only grammar and world will fail it.
 
 | Build | Grammar | Nav treatment | Hero device | Act-sequence shape | Close pattern | Signature move | World | Port |
 |---|---|---|---|---|---|---|---|---|
+| produtora-voy | worldflight | fixed minimal wordmark + one small pill CTA | worldflight poster push-in (galaxy/astronaut still, no video budget) | worldflight (4 legs, ~5.8vh) → pin (stats+count) → pan (testimonial rail) → pin+spotlight (close) | pin + spotlight + magnet CTA, footer inside the stage | Live flight-telemetry HUD rail (setor/trajetória) driven off the engine's own `--sc-seg`/`--sc-segp`/`sc:waypoint`, replacing the client's fake AI-mockup telemetry text with real scroll state | photoreal sci-fi (client-supplied AI concept renders: astronaut, galaxy, HUD panels) | — |
+
+## What is taken
+
+- **worldflight** as a grammar, closing on a **pin + spotlight + magnet** CTA with the footer folded into the stage.
+- A **live engine-state HUD rail** (waypoint name + progress) as a signature move — the next build needs a different signature, not a reskinned telemetry corner.
+- The **photoreal sci-fi / astronaut-HUD** world.
 
 *(empty: your first build has nothing to clear, so build whatever the interview
 points at. From the second onwards, this table is the constraint.)*
