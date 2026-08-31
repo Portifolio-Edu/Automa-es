@@ -62,7 +62,40 @@
   @media (max-width:720px){ .telemetry{ font-size:0.56rem; } .telemetry.tl,.telemetry.tr{ top:4.4rem; } }
 
   /* ---------- world segment grading ---------- */
+  /* .scene wraps the poster and carries a SECOND, larger scale on top of the
+     engine's own subtle push-in (which tops out at 1.17x - correct for a
+     photo playing across a whole viewport-life, but too gentle to read as
+     "the scene is changing" when four legs share a similar subject). This
+     wrapper's transform is driven by the bespoke script below, keyed off the
+     engine's own published --sc-seg/--sc-segp; the engine never touches this
+     element, only the <img> inside it. */
+  .scene{ position:absolute; inset:0; overflow:hidden; }
+  .scene img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .sc-world__seg img{ filter: saturate(0.94) contrast(1.05); }
+  /* Distinct colour identity and framing per leg, so the four legs read as
+     four places rather than four takes of one photo shoot, even where the
+     source renders share a subject. */
+  .scene--orbita img{ object-position:50% 32%; filter: saturate(0.92) contrast(1.06) brightness(0.98); }
+  .scene--aproximacao img{ object-position:38% 62%; filter: saturate(1.14) contrast(1.1) brightness(1.04) hue-rotate(-6deg); }
+  .scene--revelacao img{ object-position:62% 40%; filter: saturate(0.98) contrast(1.1) hue-rotate(8deg); }
+  .scene--pouso img{ object-position:50% 46%; filter: saturate(1.05) contrast(1.06); }
+
+  /* ---------- flying scene chips (equipment reveals) ---------- */
+  .scene-chip{
+    position:fixed; z-index:12; /* above the world (1), under the copy (20) */
+    width:min(30vw, 360px); border-radius:3px; overflow:hidden;
+    border:1px solid color-mix(in oklab, var(--sc-ink) 22%, transparent);
+    box-shadow: 0 30px 70px -20px rgba(0,0,0,0.65);
+    opacity:0; pointer-events:none; will-change:transform,opacity;
+  }
+  .scene-chip img{ display:block; width:100%; height:auto; }
+  .scene-chip .cap{
+    position:absolute; left:0; right:0; bottom:0; padding:0.6rem 0.8rem;
+    background: linear-gradient(0deg, rgba(0,0,0,0.75), transparent);
+    font-family: var(--sc-font-mono); font-size:0.66rem; letter-spacing:0.1em;
+    text-transform:uppercase; color:#fff;
+  }
+  @media (max-width:720px){ .scene-chip{ width:min(46vw, 220px); } }
 
   /* Once scroll has moved past the flight's own spacer, the fixed world stage
      must stop painting: position:fixed keeps it covering the full viewport for
@@ -204,19 +237,27 @@
     <div data-sc-world>
 
       <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.32" data-sc-waypoint="Órbita">
-        <img data-sc-poster src="assets/seg-orbita.jpg" alt="Astronauta observando uma galáxia espiral, cercado por painéis holográficos e meteoros">
+        <div class="scene scene--orbita" id="scene-0">
+          <img data-sc-poster src="assets/seg-orbita.jpg" alt="Astronauta observando uma galáxia espiral, cercado por painéis holográficos e meteoros">
+        </div>
       </div>
 
-      <div data-sc-segment data-sc-w="1.4" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
-        <img data-sc-poster src="assets/seg-aproximacao.jpg" alt="Astronauta com o capacete iluminado, cercado por painéis holográficos, sobre uma superfície rochosa">
+      <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
+        <div class="scene scene--aproximacao" id="scene-1">
+          <img data-sc-poster src="assets/seg-aproximacao.jpg" alt="Astronauta com o capacete iluminado, cercado por painéis holográficos, sobre uma superfície rochosa">
+        </div>
       </div>
 
-      <div data-sc-segment data-sc-w="1.6" data-sc-linger="0.34" data-sc-waypoint="Revelação">
-        <img data-sc-poster src="assets/seg-revelacao.jpg" alt="Astronauta observando um satélite e duas galáxias espirais, painéis holográficos ao redor">
+      <div data-sc-segment data-sc-w="1.7" data-sc-linger="0.34" data-sc-waypoint="Revelação">
+        <div class="scene scene--revelacao" id="scene-2">
+          <img data-sc-poster src="assets/seg-revelacao.jpg" alt="Astronauta observando um satélite e duas galáxias espirais, painéis holográficos ao redor">
+        </div>
       </div>
 
       <div data-sc-segment data-sc-w="1.3" data-sc-linger="0.3" data-sc-waypoint="Pouso">
-        <img data-sc-poster src="assets/seg-pouso.jpg" alt="Astronauta em silhueta contra um horizonte iluminado em tons quentes, planeta ao fundo">
+        <div class="scene scene--pouso" id="scene-3">
+          <img data-sc-poster src="assets/seg-pouso.jpg" alt="Astronauta em silhueta contra um horizonte iluminado em tons quentes, planeta ao fundo">
+        </div>
       </div>
 
     </div>
@@ -231,13 +272,13 @@
         </div>
       </div>
 
-      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.27 0.49 0 0.3">
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.26 0.48 0 0.3">
         <div class="voy-panel">
           <p class="voy-line">Somos uma produtora audiovisual em crescimento no Rio Grande do Sul, com tecnologia de ponta e uma equipe que vive para contar histórias.</p>
         </div>
       </div>
 
-      <div class="sc-copy sc-copy--center" data-sc-copy data-sc-window="0.53 0.75 0 0.3">
+      <div class="sc-copy sc-copy--center" data-sc-copy data-sc-window="0.52 0.76 0 0.3">
         <div class="voy-panel">
           <p class="voy-eyebrow">Já ajudamos marcas como</p>
           <ul class="voy-manifest">
@@ -253,6 +294,15 @@
           <p class="voy-closing-line" style="margin-top:0;">Da órbita para Porto Alegre.</p>
         </div>
       </div>
+    </div>
+
+    <div class="scene-chip" id="chip-camera">
+      <img src="assets/chip-camera.jpg" alt="Câmera de cinema em tripé, sob luz de estúdio">
+      <span class="cap">Câmera · lentes de cinema</span>
+    </div>
+    <div class="scene-chip" id="chip-drone">
+      <img src="assets/chip-drone.jpg" alt="Drone sobrevoando uma cidade">
+      <span class="cap">Captação aérea</span>
     </div>
 
     <div data-sc-spacer aria-hidden="true"></div>
@@ -350,16 +400,77 @@
     var fillEl = document.getElementById('tm-fill');
     var flightEl = document.getElementById('flight');
     var rails = [document.getElementById('tm-left'), document.getElementById('tm-right'), document.getElementById('tm-corner')];
+    var docEl = document.documentElement;
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     document.addEventListener('sc:waypoint', function (e) {
       if (e.detail && e.detail.label) sectorEl.textContent = e.detail.label;
     });
 
+    // Bespoke per-leg zoom-through: the engine's own poster push-in tops out
+    // at 1.17x over a stage's ENTIRE on-screen life, which is correct for a
+    // photo that plays across a full pinned act but reads as barely-there
+    // once four legs share a similar subject and only ~1vh of dwell each.
+    // This wrapper scale stacks on top of the engine's own transform (nested
+    // elements), driven straight off --sc-seg / --sc-segp so it needs no
+    // measuring of its own. eased with a quick ease-out so the "arrival" at
+    // each leg's midpoint (linger already slows the engine's own clip there)
+    // lands on a held, legible frame rather than a still-moving one.
+    var scenes = [0, 1, 2, 3].map(function (i) { return document.getElementById('scene-' + i); });
+    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+    // Flying equipment reveals: real, different content (camera, drone/city)
+    // layered as foreground cards so the legs read as distinct scenes even
+    // where the backdrop renders share a family resemblance. Each is scoped
+    // to one leg via segIndex; it flies up from off-screen, holds near the
+    // leg's own linger plateau, then drops back out before the next leg's
+    // crossfade begins, clear of the seam so it never doubles with the copy
+    // panel above it.
+    var chipCamera = document.getElementById('chip-camera');
+    var chipDrone = document.getElementById('chip-drone');
+    function driveChip(el, active, local, fromSide) {
+      var w = active ? clamp01((local - 0.08) / 0.22) : 0;         // fly in
+      var hold = active ? clamp01(1 - Math.max(0, local - 0.62) / 0.3) : 0; // fly out
+      var v = Math.min(w, hold);
+      var e = easeOutCubic(v);
+      var x = (1 - e) * (fromSide === 'right' ? 60 : -60);
+      var y = (1 - e) * 40;
+      el.style.opacity = (v).toFixed(3);
+      el.style.transform = reduce ? 'none' : 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) scale(' + (0.86 + e * 0.14).toFixed(3) + ')';
+    }
+    function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+
     function frame() {
-      var segp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sc-segp')) || 0;
+      var segRaw = getComputedStyle(docEl).getPropertyValue('--sc-seg');
+      var segp = parseFloat(getComputedStyle(docEl).getPropertyValue('--sc-segp')) || 0;
+      var seg = parseInt(segRaw, 10);
+      if (isNaN(seg)) seg = 0;
+
       var pct = Math.round(segp * 100);
       pctEl.textContent = String(pct).padStart(3, '0') + '%';
       fillEl.style.width = pct + '%';
+
+      if (!reduce) {
+        for (var i = 0; i < scenes.length; i++) {
+          if (!scenes[i]) continue;
+          var s = i === seg ? (1 + easeOutCubic(segp) * 0.55) : 1;
+          scenes[i].style.transform = 'scale(' + s.toFixed(4) + ')';
+        }
+      }
+
+      // chip 0 (camera) rides leg 1 (Aproximação), chip 1 (drone) rides leg 2
+      // (Revelação) — the two legs whose copy is about capability, not the
+      // opening establishing shot or the landing.
+      if (chipCamera) {
+        chipCamera.style.left = 'clamp(1.25rem, 6vw, 4rem)';
+        chipCamera.style.bottom = 'clamp(6rem, 16vh, 11rem)';
+        driveChip(chipCamera, seg === 1, segp, 'left');
+      }
+      if (chipDrone) {
+        chipDrone.style.right = 'clamp(1.25rem, 6vw, 4rem)';
+        chipDrone.style.top = 'clamp(6rem, 18vh, 12rem)';
+        driveChip(chipDrone, seg === 2, segp, 'right');
+      }
 
       var r = flightEl.getBoundingClientRect();
       var inFlight = r.bottom > 0 && r.top < innerHeight * 0.98;
@@ -367,9 +478,9 @@
       // settle a hair short of exact 0 (it did, at ~0.01), and a "nearly
       // invisible" telemetry readout still composites as a faint ghost right
       // where the grounded footer sits, ruining that text instead of this one.
-      for (var i = 0; i < rails.length; i++) {
-        rails[i].style.opacity = inFlight ? '1' : '0';
-        rails[i].style.visibility = inFlight ? 'visible' : 'hidden';
+      for (var j = 0; j < rails.length; j++) {
+        rails[j].style.opacity = inFlight ? '1' : '0';
+        rails[j].style.visibility = inFlight ? 'visible' : 'hidden';
       }
       flightEl.classList.toggle('is-past', !inFlight);
 
