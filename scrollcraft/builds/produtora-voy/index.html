@@ -363,8 +363,14 @@
 
       var r = flightEl.getBoundingClientRect();
       var inFlight = r.bottom > 0 && r.top < innerHeight * 0.98;
-      var op = inFlight ? '1' : '0';
-      for (var i = 0; i < rails.length; i++) rails[i].style.opacity = op;
+      // visibility as a hard backstop, not just opacity: a CSS transition can
+      // settle a hair short of exact 0 (it did, at ~0.01), and a "nearly
+      // invisible" telemetry readout still composites as a faint ghost right
+      // where the grounded footer sits, ruining that text instead of this one.
+      for (var i = 0; i < rails.length; i++) {
+        rails[i].style.opacity = inFlight ? '1' : '0';
+        rails[i].style.visibility = inFlight ? 'visible' : 'hidden';
+      }
       flightEl.classList.toggle('is-past', !inFlight);
 
       requestAnimationFrame(frame);
