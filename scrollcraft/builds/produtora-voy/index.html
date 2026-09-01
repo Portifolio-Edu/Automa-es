@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Produtora Voy · da órbita ao real</title>
+<meta name="description" content="A Voy transforma ideias em imagens que ficam. Produtora audiovisual em Porto Alegre, RS.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2307080a'/><circle cx='16' cy='16' r='6' fill='%23c9ff4d'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="scrollcraft.css">
+<style>
+/* Third pass. First two used the client's own AI-concept renders (garish
+   HUD graphics, a shoe glitched into a corridor, four near-identical
+   compositions). This one uses six genuinely cinematic stills the client
+   generated separately and confirmed as correct: real depth of field, real
+   film grain, a consistent astronaut character, and a real nod to the
+   Voyager probe the brand is named after. The code changes are the same
+   ones proven in the last pass (wide leg spans, a real wipe, graceful not
+   instant fades, hover glow) - this time driving assets that actually earn
+   the word "cinematic". */
+:root{
+  --sc-canvas:      #06070a;
+  --sc-surface:     #12151b;
+  --sc-ink:         #f3f1ec;
+  --sc-ink-soft:    #99a2a6;
+  --sc-accent:      #c9ff4d;
+  --sc-accent-ink:  #06070a;
+  --sc-font-display: "Unbounded", system-ui, sans-serif;
+  --sc-font-text:    "Fraunces", Georgia, serif;
+  --sc-font-mono:    "IBM Plex Mono", ui-monospace, monospace;
+}
+
+.site-bar{
+  position: fixed; inset: 0 0 auto 0; z-index: var(--sc-z-chrome);
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 1.6rem clamp(1.25rem,5vw,3rem); pointer-events:none;
+}
+.site-bar *{ pointer-events:auto; }
+.site-bar .mark{ font-family: var(--sc-font-display); font-weight:700; font-size:0.95rem; letter-spacing:0.06em; color:var(--sc-ink); }
+.site-bar .mark em{ font-style:normal; color:var(--sc-accent); }
+.site-bar .cta-small{
+  font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--sc-ink); text-decoration:none;
+  border:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent);
+  padding:0.6em 1.1em; border-radius:999px;
+  transition: border-color var(--sc-d-base) var(--sc-ease-out), background var(--sc-d-base) var(--sc-ease-out);
+}
+.site-bar .cta-small:hover{ border-color:var(--sc-accent); background:color-mix(in oklab, var(--sc-accent) 14%, transparent); }
+
+.telemetry{
+  position:fixed; z-index: var(--sc-z-chrome); font-family: var(--sc-font-mono); font-size:0.62rem;
+  letter-spacing:0.12em; text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 62%, transparent);
+  line-height:1.7; pointer-events:none; text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  transition: opacity 420ms var(--sc-ease-out);
+}
+.telemetry b{ display:block; color:var(--sc-accent); font-weight:500; }
+.telemetry.tl{ top:5.2rem; left:clamp(1.25rem,5vw,3rem); }
+.telemetry.tr{ top:5.2rem; right:clamp(1.25rem,5vw,3rem); text-align:right; }
+.telemetry.bl{ bottom:1.6rem; left:clamp(1.25rem,5vw,3rem); }
+.telemetry .track{ width:76px; height:2px; background:color-mix(in oklab, var(--sc-ink) 22%, transparent); margin-top:0.5rem; }
+.telemetry.tr .track{ margin-left:auto; }
+.telemetry .fill{ height:100%; width:0%; background:var(--sc-accent); }
+@media (max-width:720px){ .telemetry{ font-size:0.56rem; } .telemetry.tl,.telemetry.tr{ top:4.4rem; } }
+
+.sc-world__seg img{ filter: saturate(1.02) contrast(1.03); }
+/* The engine's own crossfade alpha-blends the incoming leg over the outgoing
+   one. Between two unrelated full-bleed photographs that always reads as a
+   double-exposure ghost, not a transformation - no amount of blur fixes that,
+   it only smears the ghost (tried, rejected). Pin every leg's real opacity to
+   1 and drive the actual reveal with a soft directional mask instead: at any
+   instant a pixel shows exactly one photograph, so there is no ghosting, but
+   the reveal edge sweeps across real intermediate frames as the incoming leg
+   wipes over the outgoing - see the JS below, which times it off the same
+   progress value the engine already computes for the alpha fade. */
+.sc-world__seg{ opacity: 1 !important; }
+
+/* The world's trailing spacer holds one extra viewport-height on purpose (so
+   the last leg's final frame is reachable at all - see the engine's own
+   comment on data-sc-spacer), and the very next act's own .sc-stage can
+   already be scrolling into that same viewport before the hold buffer ends.
+   Both .sc-world and .sc-stage share the engine's --sc-z-stage token, so at
+   equal z-index the later DOM element wins regardless of position type
+   (fixed vs. sticky-not-yet-engaged) - the next act's content was painting
+   over the still-visible world during that overlap. Give the world a
+   deliberately higher z-index so it always wins while it is actually
+   display:block; once is-past removes it, z-index is moot. */
+#flight [data-sc-world]{ z-index: 5; }
+
+#flight.is-past [data-sc-world], #flight.is-past [data-sc-world-copy]{ display:none; }
+
+.voy-eyebrow{
+  font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.2em;
+  text-transform:uppercase; color: color-mix(in oklab, var(--sc-accent) 85%, var(--sc-ink)); margin:0 0 1rem;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.7);
+}
+.voy-tagline{
+  font-family: var(--sc-font-display); font-weight:700; font-size: clamp(2.1rem, 5vw, 3.8rem);
+  line-height:1.05; letter-spacing:-0.01em; color: var(--sc-ink); margin:0; text-wrap:balance;
+  text-shadow: 0 6px 30px rgba(0,0,0,0.75);
+}
+.voy-line{
+  font-family: var(--sc-font-text); font-style:italic; font-weight:400; font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  color: var(--sc-ink); max-width:32ch; margin:1.1rem 0 0; text-shadow: 0 4px 22px rgba(0,0,0,0.75);
+}
+.voy-manifest{ margin:1.2rem 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:0.5em 1em; max-width:36rem; }
+.voy-manifest li{ font-family: var(--sc-font-mono); font-size:0.8rem; letter-spacing:0.03em; color: var(--sc-ink); text-shadow: 0 2px 12px rgba(0,0,0,0.8); white-space:nowrap; }
+.voy-manifest li::before{ content:"·"; color:var(--sc-accent); margin-right:0.5em; }
+.voy-closing-line{ font-family: var(--sc-font-mono); font-size:0.82rem; letter-spacing:0.1em; text-transform:uppercase; color: var(--sc-ink); text-shadow: 0 2px 14px rgba(0,0,0,0.8); }
+
+/* Cinematic title-card wipe, once, on load. */
+.voy-wipe{ animation: voy-wipe 1.15s cubic-bezier(0.65,0,0.35,1) both; animation-delay: 0.2s; }
+@keyframes voy-wipe{ from{ clip-path: inset(0 100% 0 0); } to{ clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce){ .voy-wipe{ animation:none; clip-path:none; } }
+
+/* ---------- grounded: stats (peak) ---------- */
+.stats-act{ position:relative; }
+.stats-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.stats-bg::after{ content:""; }
+.stats-scrim{ position:absolute; inset:0; z-index:1; background: linear-gradient(180deg, rgba(6,7,10,0.55) 0%, rgba(6,7,10,0.78) 55%, rgba(6,7,10,0.92) 100%); }
+.stats-stage{ position:relative; z-index:2; height:100%; display:flex; align-items:center; justify-content:center; }
+.stats-row{ display:flex; flex-wrap:wrap; gap:clamp(2rem,6vw,5rem); justify-content:center; }
+.stat{ text-align:center; }
+.stat .num{ font-family: var(--sc-font-display); font-weight:700; font-size: clamp(2.6rem, 7vw, 4.6rem); color:var(--sc-ink); display:inline-flex; gap:0.15em; align-items:baseline; }
+.stat .num .unit{ font-size:0.4em; font-family:var(--sc-font-mono); color:var(--sc-accent); text-transform:uppercase; }
+.stat p{ font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--sc-ink-soft); margin:0.6rem 0 0; }
+
+/* ---------- testimonials ---------- */
+.voz-rail{ align-items:center; gap: clamp(1.2rem,3vw,2rem); padding-inline: clamp(1.25rem,8vw,10vw); }
+.voz-lead{ flex:0 0 auto; width:min(26rem,70vw); padding-right:2rem; }
+.voz-lead .voy-eyebrow{ margin-bottom:1.2rem; text-shadow:none; }
+.voz-card{
+  flex:0 0 auto; width:min(22rem,76vw); background:var(--sc-surface); border:1px solid var(--sc-hairline);
+  border-radius:var(--sc-r-md); padding:1.8rem; box-shadow:var(--sc-e1);
+  transition: border-color var(--sc-d-slow) var(--sc-ease-out), transform var(--sc-d-slow) var(--sc-ease-out), box-shadow var(--sc-d-slow) var(--sc-ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .voz-card:hover{ border-color: color-mix(in oklab, var(--sc-accent) 45%, transparent); box-shadow: var(--sc-e2), 0 0 42px -12px color-mix(in oklab, var(--sc-accent) 55%, transparent); transform: translateY(-4px); }
+}
+.voz-card p{ font-family:var(--sc-font-text); font-style:italic; color:var(--sc-ink); font-size:1.02rem; line-height:1.5; margin:0; }
+.voz-card footer{ margin-top:1.2rem; }
+.voz-card .handle{ font-family:var(--sc-font-mono); font-size:0.78rem; color:var(--sc-accent); }
+.voz-card .role{ display:block; font-size:0.8rem; color:var(--sc-ink-soft); margin-top:0.15rem; }
+
+/* ---------- close ---------- */
+.close{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; }
+.close__inner{ max-width:40rem; padding-inline: var(--sc-gutter); }
+.close .cta{
+  display:inline-flex; align-items:center; gap:0.6em; margin-top:2rem; background:var(--sc-accent); color:var(--sc-accent-ink);
+  font-family:var(--sc-font-display); font-weight:700; font-size:0.95rem; padding:1rem 1.8rem; border-radius:999px; text-decoration:none;
+}
+.close .contact-lines{ margin-top:2.4rem; font-family:var(--sc-font-mono); font-size:0.8rem; letter-spacing:0.04em; color:var(--sc-ink-soft); line-height:2; }
+.close .contact-lines a{ color:var(--sc-ink); text-decoration:none; border-bottom:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent); }
+.foot{ position:absolute; bottom:1.6rem; left:0; right:0; display:flex; justify-content:space-between; padding-inline: var(--sc-gutter); font-family:var(--sc-font-mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 40%, transparent); }
+</style>
+</head>
+<body>
+
+<span data-sc-progress></span>
+<div class="sc-grain" aria-hidden="true"></div>
+
+<header class="site-bar">
+  <span class="mark">PRODUTORA <em>VOY</em></span>
+  <a class="cta-small" href="#contato">Falar com a Voy</a>
+</header>
+
+<div class="telemetry tl" id="tm-left">Setor<br><b id="tm-sector">Órbita</b></div>
+<div class="telemetry tr" id="tm-right">Trajetória<br><b id="tm-pct">000%</b><div class="track"><div class="fill" id="tm-fill"></div></div></div>
+<div class="telemetry bl" id="tm-corner">Voy // registro de voo</div>
+
+<main id="top">
+
+  <div id="flight" data-sc-mode="worldflight" data-sc-seam="0.4">
+    <div data-sc-world>
+
+      <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.32" data-sc-waypoint="Órbita">
+        <img data-sc-poster src="assets/cine-orbita.jpg" alt="Astronauta no topo de um penhasco rochoso, observando uma galáxia espiral distante">
+      </div>
+
+      <div data-sc-segment data-sc-w="2.1" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
+        <img data-sc-poster src="assets/cine-aproximacao.jpg" alt="Astronauta estendendo a mão em direção a uma sonda espacial dourada, no espírito da Voyager">
+      </div>
+
+      <div data-sc-segment data-sc-w="2.0" data-sc-linger="0.34" data-sc-waypoint="Revelação">
+        <img data-sc-poster src="assets/cine-revelacao.jpg" alt="Close no visor do capacete de um astronauta, refletindo a sonda espacial contra uma nebulosa">
+      </div>
+
+      <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.28" data-sc-waypoint="Trajetória">
+        <img data-sc-poster src="assets/cine-trajetoria.jpg" alt="Astronauta caminhando por um corredor iluminado de uma espaçonave">
+      </div>
+
+      <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.3" data-sc-waypoint="Pouso">
+        <img data-sc-poster src="assets/cine-pouso.jpg" alt="Astronauta em silhueta caminhando em direção a uma porta iluminada por luz dourada">
+      </div>
+
+    </div>
+
+    <div data-sc-world-copy>
+      <div class="sc-world__scrim sc-scrim sc-scrim--band" aria-hidden="true"></div>
+
+      <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="hero">
+        <div class="voy-wipe">
+          <p class="voy-eyebrow">Porto Alegre · Rio Grande do Sul</p>
+          <h1 class="voy-tagline">A Voy transforma ideias em imagens que ficam.</h1>
+        </div>
+      </div>
+
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.21 0.42 0.35 0.3">
+        <p class="voy-line">Somos uma produtora audiovisual em crescimento no Rio Grande do Sul, com tecnologia de ponta e uma equipe que vive para contar histórias.</p>
+      </div>
+
+      <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="0.43 0.63 0.3 0.3">
+        <p class="voy-eyebrow">Já ajudamos marcas como</p>
+        <ul class="voy-manifest">
+          <li>Globo</li><li>Dell</li><li>Cyrela</li><li>Melnick</li><li>CCR</li>
+          <li>Bud</li><li>Igui</li><li>ATM</li><li>Net</li><li>Branri</li><li>Chilli</li>
+        </ul>
+        <p class="voy-line" style="font-style:normal;font-size:1.02rem;max-width:36ch;">a comunicarem o que realmente importa: com criatividade, estratégia e resultado.</p>
+      </div>
+
+      <!-- Trajetória (corredor) carries no copy on purpose: an authored beat of
+           quiet after the client-manifest reveal, before the closing line -
+           not dead scroll, a deliberate breath. -->
+
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="finale">
+        <p class="voy-closing-line">Da órbita para Porto Alegre.</p>
+      </div>
+    </div>
+
+    <div data-sc-spacer aria-hidden="true"></div>
+  </div>
+
+  <section class="stats-act" data-sc-act="pin" data-sc-span="1.3" data-sc-drift="#171310">
+    <div data-sc-stage>
+      <img class="stats-bg" src="assets/cine-stats.jpg" alt="Astronauta flutuando em órbita, com a Terra ao fundo">
+      <div class="stats-scrim" aria-hidden="true"></div>
+      <div class="stats-stage">
+        <div class="stats-row" data-sc-cue="0.1 0.9" data-sc-rise="0.5">
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 15" data-sc-count-at="0.08 0.45">0</span><span class="unit">mil</span></span>
+            <p>produções realizadas</p>
+          </div>
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 800" data-sc-count-at="0.13 0.5">0</span></span>
+            <p>marcas atendidas</p>
+          </div>
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 10" data-sc-count-at="0.18 0.55">0</span><span class="unit">anos</span></span>
+            <p>de experiência</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section data-sc-act="pan" data-sc-span="3.0" data-sc-drift="#101217">
+    <div data-sc-stage>
+      <div class="rail voz-rail" data-sc-pan="0.08">
+        <div class="voz-lead sc-stack">
+          <p class="voy-eyebrow">Vozes</p>
+          <h2 class="sc-display sc-display--md">Quem já voou com a gente.</h2>
+          <p class="sc-body">Depoimentos reais, tirados do site atual da Voy.</p>
+        </div>
+        <article class="voz-card" data-sc-tilt="5"><p>"Nosso vídeo foi o vídeo com maior visualização na história de nosso município."</p><footer><span class="handle">@gilmarcarvalhors</span><span class="role">Candidato a Prefeito de Encruzilhada do Sul</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Rafael Vargas é um estúdio ambulante de criatividade, com muita competência e profissionalismo."</p><footer><span class="handle">@edukautz</span><span class="role">CEO, DMBank</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Desafiei o Rafael a atualizar nossa marca. Ele conseguiu inová-la sem tirar a sua essência."</p><footer><span class="handle">@barbaraimobiliaria</span><span class="role">Empreendedora</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"A Voy criou toda identidade visual e um website de altíssima qualidade, tudo entregue super rápido."</p><footer><span class="handle">@geotropico</span><span class="role">Diretor, Geotrópico</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Vídeo para minha empresa ficou perfeito e me ajudou muito nas vendas."</p><footer><span class="handle">@mselitebox</span><span class="role">CEO, Elite Box</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Já fizemos diversos vídeos e videoclipes juntos e a qualidade é sempre brutal."</p><footer><span class="handle">@andresarate</span><span class="role">DJ / Produtor Musical</span></footer></article>
+      </div>
+    </div>
+  </section>
+
+  <section id="contato" data-sc-act="pin" data-sc-span="1.2" data-sc-drift="#07080a">
+    <div data-sc-stage class="close" data-sc-spotlight>
+      <div class="close__inner">
+        <p class="voy-eyebrow" style="text-shadow:none;" data-sc-cue="0.05">Próximo passo</p>
+        <h2 class="sc-display sc-display--lg" data-sc-cue="0.08" data-sc-kinetic="lines">Qual é a história que a sua empresa ainda não contou?</h2>
+        <a class="cta" href="mailto:contato@produtoravoy.com.br" data-sc-magnet="0.24" data-sc-cue="0.1" data-sc-rise="0">Falar com a Voy</a>
+        <div class="contact-lines" data-sc-cue="0.12" data-sc-rise="0">
+          <div><a href="mailto:contato@produtoravoy.com.br">contato@produtoravoy.com.br</a></div>
+          <div><a href="tel:+555198195175">+55 (51) 98195-1175</a></div>
+          <div>Porto Alegre · Rio Grande do Sul</div>
+        </div>
+      </div>
+      <footer class="foot"><span>Produtora Voy</span><span>@produtoravoy</span></footer>
+    </div>
+  </section>
+
+</main>
+
+<script src="scrollcraft.js"></script>
+<script>
+  ScrollCraft.mount(document.body);
+
+  (function () {
+    var sectorEl = document.getElementById('tm-sector');
+    var pctEl = document.getElementById('tm-pct');
+    var fillEl = document.getElementById('tm-fill');
+    var flightEl = document.getElementById('flight');
+    var rails = [document.getElementById('tm-left'), document.getElementById('tm-right'), document.getElementById('tm-corner')];
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Scene wipe: CSS above pins every leg's real opacity to 1, so the
+    // engine's own inline opacity value on .sc-world__seg is no longer what
+    // paints - it is only read here as timing data (already eased to the
+    // seam window by the engine's own smooth()). The incoming leg (the one
+    // mid-crossfade, 0 < op < 1) gets a soft directional mask instead: fully
+    // hidden ahead of a moving edge, fully shown behind it, with a feathered
+    // band across the edge itself. At any instant a pixel shows exactly one
+    // photograph - no ghosting - but the edge sweeps across real
+    // intermediate frames as it crosses the viewport, which is the "one
+    // image becomes the other" read a straight alpha blend never gave.
+    // Skipped under reduced motion: with no mask ever set, the topmost leg's
+    // forced opacity just hard-cuts over the last one, which is the correct
+    // reduced-motion behaviour (no sweep, no ghosting, no motion at all).
+    var FEATHER = 22; // % of viewport width the soft edge spans
+    var segImgs = Array.prototype.map.call(document.querySelectorAll('.sc-world__seg'), function (seg) {
+      return { seg: seg, img: seg.querySelector('img') };
+    });
+
+    document.addEventListener('sc:waypoint', function (e) {
+      if (e.detail && e.detail.label) sectorEl.textContent = e.detail.label;
+    });
+
+    function frame() {
+      var segp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sc-segp')) || 0;
+      var pct = Math.round(segp * 100);
+      pctEl.textContent = String(pct).padStart(3, '0') + '%';
+      fillEl.style.width = pct + '%';
+
+      if (!reduce) {
+        for (var s = 0; s < segImgs.length; s++) {
+          var img = segImgs[s].img;
+          var op = parseFloat(segImgs[s].seg.style.opacity);
+          if (isNaN(op) || op >= 1 || op <= 0) {
+            if (img.style.maskImage) { img.style.maskImage = ''; img.style.webkitMaskImage = ''; }
+            continue;
+          }
+          var edge = op * 100;
+          var p1 = Math.max(edge - FEATHER / 2, 0);
+          var p2 = Math.min(edge + FEATHER / 2, 100);
+          var mask = 'linear-gradient(90deg, black 0%, black ' + p1.toFixed(2) + '%, transparent ' + p2.toFixed(2) + '%, transparent 100%)';
+          img.style.maskImage = mask;
+          img.style.webkitMaskImage = mask;
+        }
+      }
+
+      var r = flightEl.getBoundingClientRect();
+      var inFlight = r.bottom > 0 && r.top < innerHeight * 0.98;
+      for (var i = 0; i < rails.length; i++) {
+        rails[i].style.opacity = inFlight ? '1' : '0';
+        rails[i].style.visibility = inFlight ? 'visible' : 'hidden';
+      }
+      flightEl.classList.toggle('is-past', !inFlight);
+
+      requestAnimationFrame(frame);
+    }
+    frame();
+  })();
+</script>
+</body>
+</html>
