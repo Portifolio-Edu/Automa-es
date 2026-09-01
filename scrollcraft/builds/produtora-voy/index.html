@@ -159,6 +159,24 @@
     text-transform:uppercase; color: var(--sc-ink-soft); margin-top:0.9rem;
   }
 
+  /* Cinematic title-card wipe on the hero panel, once, on load. Not scroll
+     driven: the hero is present the instant the page lands (rIn 0 on its
+     copy window), the way a film's own title card holds rather than fading
+     up from a blank first frame. A hard clip-path reveal reads as "a title
+     card being uncovered", which is closer to how a real trailer opens a
+     scene than an opacity cross-fade. */
+  .voy-panel--wipe{
+    animation: voy-wipe 1.1s cubic-bezier(0.65,0,0.35,1) both;
+    animation-delay: 0.15s;
+  }
+  @keyframes voy-wipe{
+    from{ clip-path: inset(0 100% 0 0); }
+    to{ clip-path: inset(0 0 0 0); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .voy-panel--wipe{ animation: none; clip-path: none; }
+  }
+
   /* ---------- grounded: stats ---------- */
   .stats-stage{
     height:100%; display:flex; align-items:center; justify-content:center;
@@ -182,6 +200,14 @@
     flex:0 0 auto; width:min(22rem,76vw); background:var(--sc-surface);
     border:1px solid var(--sc-hairline); border-radius:var(--sc-r-md);
     padding:1.8rem; box-shadow:var(--sc-e1);
+    transition: border-color var(--sc-d-slow) var(--sc-ease-out), transform var(--sc-d-slow) var(--sc-ease-out), box-shadow var(--sc-d-slow) var(--sc-ease-out);
+  }
+  @media (hover:hover) and (pointer:fine){
+    .voz-card:hover{
+      border-color: color-mix(in oklab, var(--sc-accent) 45%, transparent);
+      box-shadow: var(--sc-e2), 0 0 42px -12px color-mix(in oklab, var(--sc-accent) 55%, transparent);
+      transform: translateY(-4px);
+    }
   }
   .voz-card p{ font-family:var(--sc-font-text); font-style:italic; color:var(--sc-ink);
     font-size:1.02rem; line-height:1.5; margin:0; }
@@ -236,25 +262,32 @@
   <div id="flight" data-sc-mode="worldflight" data-sc-seam="0.12">
     <div data-sc-world>
 
-      <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.32" data-sc-waypoint="Órbita">
+      <!-- Spans widened from the previous pass (1.5/1.5/1.7/1.3 -> 1.9/2.0/2.3/1.7). A
+           reference teardown of this exact skill flagged, twice, independently, the
+           single most common failure of a scroll-driven site: motion that resolves
+           before the reader has scrolled far enough to actually watch it happen. The
+           push-in and the flying chips are both driven by the leg's own local
+           progress, so widening the leg is the one change that slows everything
+           inside it at once, proportionally, with no other code touched. -->
+      <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.32" data-sc-waypoint="Órbita">
         <div class="scene scene--orbita" id="scene-0">
           <img data-sc-poster src="assets/seg-orbita.jpg" alt="Astronauta observando uma galáxia espiral, cercado por painéis holográficos e meteoros">
         </div>
       </div>
 
-      <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
+      <div data-sc-segment data-sc-w="2.0" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
         <div class="scene scene--aproximacao" id="scene-1">
           <img data-sc-poster src="assets/seg-aproximacao.jpg" alt="Astronauta com o capacete iluminado, cercado por painéis holográficos, sobre uma superfície rochosa">
         </div>
       </div>
 
-      <div data-sc-segment data-sc-w="1.7" data-sc-linger="0.34" data-sc-waypoint="Revelação">
+      <div data-sc-segment data-sc-w="2.3" data-sc-linger="0.34" data-sc-waypoint="Revelação">
         <div class="scene scene--revelacao" id="scene-2">
           <img data-sc-poster src="assets/seg-revelacao.jpg" alt="Astronauta observando um satélite e duas galáxias espirais, painéis holográficos ao redor">
         </div>
       </div>
 
-      <div data-sc-segment data-sc-w="1.3" data-sc-linger="0.3" data-sc-waypoint="Pouso">
+      <div data-sc-segment data-sc-w="1.7" data-sc-linger="0.3" data-sc-waypoint="Pouso">
         <div class="scene scene--pouso" id="scene-3">
           <img data-sc-poster src="assets/seg-pouso.jpg" alt="Astronauta em silhueta contra um horizonte iluminado em tons quentes, planeta ao fundo">
         </div>
@@ -266,19 +299,19 @@
       <div class="sc-world__scrim sc-scrim sc-scrim--vignette" aria-hidden="true"></div>
 
       <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="hero">
-        <div class="voy-panel">
+        <div class="voy-panel voy-panel--wipe">
           <p class="voy-eyebrow">Porto Alegre · Rio Grande do Sul</p>
-          <h1 class="voy-tagline" data-sc-kinetic="lines">A Voy transforma ideias em imagens que ficam.</h1>
+          <h1 class="voy-tagline">A Voy transforma ideias em imagens que ficam.</h1>
         </div>
       </div>
 
-      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.26 0.48 0 0.3">
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.25 0.48 0.4 0.3">
         <div class="voy-panel">
           <p class="voy-line">Somos uma produtora audiovisual em crescimento no Rio Grande do Sul, com tecnologia de ponta e uma equipe que vive para contar histórias.</p>
         </div>
       </div>
 
-      <div class="sc-copy sc-copy--center" data-sc-copy data-sc-window="0.52 0.76 0 0.3">
+      <div class="sc-copy sc-copy--center" data-sc-copy data-sc-window="0.51 0.77 0.35 0.3">
         <div class="voy-panel">
           <p class="voy-eyebrow">Já ajudamos marcas como</p>
           <ul class="voy-manifest">
