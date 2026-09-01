@@ -63,7 +63,7 @@
 .telemetry .fill{ height:100%; width:0%; background:var(--sc-accent); }
 @media (max-width:720px){ .telemetry{ font-size:0.56rem; } .telemetry.tl,.telemetry.tr{ top:4.4rem; } }
 
-.sc-world__seg img{ filter: saturate(1.02) contrast(1.03); }
+.sc-world__seg img{ filter: saturate(1.02) contrast(1.03); will-change: filter; }
 
 /* The world's trailing spacer holds one extra viewport-height on purpose (so
    the last leg's final frame is reachable at all - see the engine's own
@@ -160,7 +160,7 @@
 
 <main id="top">
 
-  <div id="flight" data-sc-mode="worldflight" data-sc-seam="0.12">
+  <div id="flight" data-sc-mode="worldflight" data-sc-seam="0.4">
     <div data-sc-world>
 
       <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.32" data-sc-waypoint="Órbita">
@@ -289,6 +289,20 @@
     var fillEl = document.getElementById('tm-fill');
     var flightEl = document.getElementById('flight');
     var rails = [document.getElementById('tm-left'), document.getElementById('tm-right'), document.getElementById('tm-corner')];
+    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Dissolve blur: the engine already crossfades adjacent legs by opacity
+    // over the seam window (widened to 0.4, its own maximum, so the blend has
+    // real scroll room instead of snapping past in a sliver). A pure linear
+    // alpha fade between two sharp photographs still reads as a cut with a
+    // brief double-exposure, not a transformation - real film dissolves blur
+    // through the midpoint because defocusing both plates is what sells one
+    // image becoming another instead of two images being stacked. Blur peaks
+    // at opacity 0.5 (mid-blend) and returns to 0 at either end, reacting
+    // to the engine's own opacity output rather than re-deriving the timing.
+    var segImgs = Array.prototype.map.call(document.querySelectorAll('.sc-world__seg'), function (seg) {
+      return { seg: seg, img: seg.querySelector('img') };
+    });
 
     document.addEventListener('sc:waypoint', function (e) {
       if (e.detail && e.detail.label) sectorEl.textContent = e.detail.label;
@@ -299,6 +313,15 @@
       var pct = Math.round(segp * 100);
       pctEl.textContent = String(pct).padStart(3, '0') + '%';
       fillEl.style.width = pct + '%';
+
+      if (!reduce) {
+        for (var s = 0; s < segImgs.length; s++) {
+          var op = parseFloat(segImgs[s].seg.style.opacity);
+          if (isNaN(op)) continue;
+          var blur = 4 * op * (1 - op) * 15; // parabola: 0 at op 0/1, 15px peak at op 0.5
+          segImgs[s].img.style.filter = blur > 0.15 ? 'blur(' + blur.toFixed(2) + 'px) saturate(1.02) contrast(1.03)' : 'saturate(1.02) contrast(1.03)';
+        }
+      }
 
       var r = flightEl.getBoundingClientRect();
       var inFlight = r.bottom > 0 && r.top < innerHeight * 0.98;
