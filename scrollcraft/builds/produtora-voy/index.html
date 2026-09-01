@@ -10,232 +10,138 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;500;700;900&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="scrollcraft.css">
 <style>
-  :root{
-    --sc-canvas:      #07080a;
-    --sc-surface:     #12151b;
-    --sc-ink:         #f3f1ec;
-    --sc-ink-soft:    #99a2a6;
-    --sc-accent:      #c9ff4d;
-    --sc-accent-ink:  #07080a;
-    --sc-font-display: "Unbounded", system-ui, sans-serif;
-    --sc-font-text:    "Fraunces", Georgia, serif;
-    --sc-font-mono:    "IBM Plex Mono", ui-monospace, monospace;
-  }
+/* Third pass. First two used the client's own AI-concept renders (garish
+   HUD graphics, a shoe glitched into a corridor, four near-identical
+   compositions). This one uses six genuinely cinematic stills the client
+   generated separately and confirmed as correct: real depth of field, real
+   film grain, a consistent astronaut character, and a real nod to the
+   Voyager probe the brand is named after. The code changes are the same
+   ones proven in the last pass (wide leg spans, a real wipe, graceful not
+   instant fades, hover glow) - this time driving assets that actually earn
+   the word "cinematic". */
+:root{
+  --sc-canvas:      #06070a;
+  --sc-surface:     #12151b;
+  --sc-ink:         #f3f1ec;
+  --sc-ink-soft:    #99a2a6;
+  --sc-accent:      #c9ff4d;
+  --sc-accent-ink:  #06070a;
+  --sc-font-display: "Unbounded", system-ui, sans-serif;
+  --sc-font-text:    "Fraunces", Georgia, serif;
+  --sc-font-mono:    "IBM Plex Mono", ui-monospace, monospace;
+}
 
-  /* ---------- nav ---------- */
-  .site-bar{
-    position: fixed; inset: 0 0 auto 0; z-index: var(--sc-z-chrome);
-    display:flex; align-items:center; justify-content:space-between;
-    padding: 1.6rem clamp(1.25rem,5vw,3rem);
-    pointer-events:none;
-  }
-  .site-bar *{ pointer-events:auto; }
-  .site-bar .mark{
-    font-family: var(--sc-font-display); font-weight:700; font-size:0.95rem;
-    letter-spacing:0.06em; color:var(--sc-ink);
-  }
-  .site-bar .mark em{ font-style:normal; color:var(--sc-accent); }
-  .site-bar .cta-small{
-    font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--sc-ink); text-decoration:none;
-    border:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent);
-    padding:0.6em 1.1em; border-radius:999px;
-    transition: border-color var(--sc-d-base) var(--sc-ease-out), background var(--sc-d-base) var(--sc-ease-out);
-  }
-  .site-bar .cta-small:hover{ border-color:var(--sc-accent); background:color-mix(in oklab, var(--sc-accent) 14%, transparent); }
+.site-bar{
+  position: fixed; inset: 0 0 auto 0; z-index: var(--sc-z-chrome);
+  display:flex; align-items:center; justify-content:space-between;
+  padding: 1.6rem clamp(1.25rem,5vw,3rem); pointer-events:none;
+}
+.site-bar *{ pointer-events:auto; }
+.site-bar .mark{ font-family: var(--sc-font-display); font-weight:700; font-size:0.95rem; letter-spacing:0.06em; color:var(--sc-ink); }
+.site-bar .mark em{ font-style:normal; color:var(--sc-accent); }
+.site-bar .cta-small{
+  font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em;
+  text-transform:uppercase; color:var(--sc-ink); text-decoration:none;
+  border:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent);
+  padding:0.6em 1.1em; border-radius:999px;
+  transition: border-color var(--sc-d-base) var(--sc-ease-out), background var(--sc-d-base) var(--sc-ease-out);
+}
+.site-bar .cta-small:hover{ border-color:var(--sc-accent); background:color-mix(in oklab, var(--sc-accent) 14%, transparent); }
 
-  /* ---------- telemetry rail (signature move) ---------- */
-  .telemetry{
-    position:fixed; z-index: var(--sc-z-chrome);
-    font-family: var(--sc-font-mono); font-size:0.62rem; letter-spacing:0.12em;
-    text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 55%, transparent);
-    line-height:1.7; pointer-events:none;
-    transition: opacity 420ms var(--sc-ease-out);
-  }
-  .telemetry b{ display:block; color:var(--sc-accent); font-weight:500; }
-  .telemetry.tl{ top:5.2rem; left:clamp(1.25rem,5vw,3rem); }
-  .telemetry.tr{ top:5.2rem; right:clamp(1.25rem,5vw,3rem); text-align:right; }
-  .telemetry.bl{ bottom:1.6rem; left:clamp(1.25rem,5vw,3rem); }
-  .telemetry .track{ width:76px; height:2px; background:color-mix(in oklab, var(--sc-ink) 18%, transparent); margin-top:0.5rem; }
-  .telemetry.tr .track{ margin-left:auto; }
-  .telemetry .fill{ height:100%; width:0%; background:var(--sc-accent); }
-  @media (max-width:720px){ .telemetry{ font-size:0.56rem; } .telemetry.tl,.telemetry.tr{ top:4.4rem; } }
+.telemetry{
+  position:fixed; z-index: var(--sc-z-chrome); font-family: var(--sc-font-mono); font-size:0.62rem;
+  letter-spacing:0.12em; text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 62%, transparent);
+  line-height:1.7; pointer-events:none; text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  transition: opacity 420ms var(--sc-ease-out);
+}
+.telemetry b{ display:block; color:var(--sc-accent); font-weight:500; }
+.telemetry.tl{ top:5.2rem; left:clamp(1.25rem,5vw,3rem); }
+.telemetry.tr{ top:5.2rem; right:clamp(1.25rem,5vw,3rem); text-align:right; }
+.telemetry.bl{ bottom:1.6rem; left:clamp(1.25rem,5vw,3rem); }
+.telemetry .track{ width:76px; height:2px; background:color-mix(in oklab, var(--sc-ink) 22%, transparent); margin-top:0.5rem; }
+.telemetry.tr .track{ margin-left:auto; }
+.telemetry .fill{ height:100%; width:0%; background:var(--sc-accent); }
+@media (max-width:720px){ .telemetry{ font-size:0.56rem; } .telemetry.tl,.telemetry.tr{ top:4.4rem; } }
 
-  /* ---------- world segment grading ---------- */
-  /* .scene wraps the poster and carries a SECOND, larger scale on top of the
-     engine's own subtle push-in (which tops out at 1.17x - correct for a
-     photo playing across a whole viewport-life, but too gentle to read as
-     "the scene is changing" when four legs share a similar subject). This
-     wrapper's transform is driven by the bespoke script below, keyed off the
-     engine's own published --sc-seg/--sc-segp; the engine never touches this
-     element, only the <img> inside it. */
-  .scene{ position:absolute; inset:0; overflow:hidden; }
-  .scene img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-  .sc-world__seg img{ filter: saturate(0.94) contrast(1.05); }
-  /* Distinct colour identity and framing per leg, so the four legs read as
-     four places rather than four takes of one photo shoot, even where the
-     source renders share a subject. */
-  .scene--orbita img{ object-position:50% 32%; filter: saturate(0.92) contrast(1.06) brightness(0.98); }
-  .scene--aproximacao img{ object-position:38% 62%; filter: saturate(1.14) contrast(1.1) brightness(1.04) hue-rotate(-6deg); }
-  .scene--revelacao img{ object-position:62% 40%; filter: saturate(0.98) contrast(1.1) hue-rotate(8deg); }
-  .scene--pouso img{ object-position:50% 46%; filter: saturate(1.05) contrast(1.06); }
+.sc-world__seg img{ filter: saturate(1.02) contrast(1.03); }
 
-  /* ---------- flying scene chips (equipment reveals) ---------- */
-  .scene-chip{
-    position:fixed; z-index:12; /* above the world (1), under the copy (20) */
-    width:min(30vw, 360px); border-radius:3px; overflow:hidden;
-    border:1px solid color-mix(in oklab, var(--sc-ink) 22%, transparent);
-    box-shadow: 0 30px 70px -20px rgba(0,0,0,0.65);
-    opacity:0; pointer-events:none; will-change:transform,opacity;
-  }
-  .scene-chip img{ display:block; width:100%; height:auto; }
-  .scene-chip .cap{
-    position:absolute; left:0; right:0; bottom:0; padding:0.6rem 0.8rem;
-    background: linear-gradient(0deg, rgba(0,0,0,0.75), transparent);
-    font-family: var(--sc-font-mono); font-size:0.66rem; letter-spacing:0.1em;
-    text-transform:uppercase; color:#fff;
-  }
-  @media (max-width:720px){ .scene-chip{ width:min(46vw, 220px); } }
+/* The world's trailing spacer holds one extra viewport-height on purpose (so
+   the last leg's final frame is reachable at all - see the engine's own
+   comment on data-sc-spacer), and the very next act's own .sc-stage can
+   already be scrolling into that same viewport before the hold buffer ends.
+   Both .sc-world and .sc-stage share the engine's --sc-z-stage token, so at
+   equal z-index the later DOM element wins regardless of position type
+   (fixed vs. sticky-not-yet-engaged) - the next act's content was painting
+   over the still-visible world during that overlap. Give the world a
+   deliberately higher z-index so it always wins while it is actually
+   display:block; once is-past removes it, z-index is moot. */
+#flight [data-sc-world]{ z-index: 5; }
 
-  /* Once scroll has moved past the flight's own spacer, the fixed world stage
-     must stop painting: position:fixed keeps it covering the full viewport for
-     the life of the document otherwise, and it sits above the grounded
-     in-flow sections that follow (a positioned z-index layer paints above
-     static in-flow content), wrecking their contrast. Toggled by script,
-     below. visibility (not display) so layout geometry the engine measures
-     is untouched. */
-  /* display:none, not visibility: the engine writes inline
-     style.visibility="visible" on whichever segment is currently active (it
-     never expects the whole worldflight to be dismissed), and an inline
-     visibility on a descendant overrides an ancestor's visibility:hidden by
-     CSS's own visibility-inheritance rule. display has no such override. */
-  #flight.is-past [data-sc-world], #flight.is-past [data-sc-world-copy]{ display:none; }
+#flight.is-past [data-sc-world], #flight.is-past [data-sc-world-copy]{ display:none; }
 
-  /* Every flight copy block gets a soft readout panel behind it rather than
-     relying on a single scrim gradient: the four segments are AI-generated
-     renders with very different local brightness, so a gradient tuned for one
-     fails contrast on another. A translucent, blurred panel guarantees
-     legibility regardless of what is behind it, and doubles as the HUD-panel
-     visual language the source concept art already uses. */
-  .voy-panel{
-    display:inline-block;
-    /* Near-opaque, not glassy: the block this sits in fades in as ONE unit
-       (engine-driven opacity on the ancestor), so a translucent panel fades
-       proportionally with the text and stays exactly as poor as no panel at
-       all for most of the ramp. Solid backing is what actually guarantees the
-       contrast floor, independent of what mid-fade opacity the ancestor is
-       currently at. */
-    background: color-mix(in oklab, var(--sc-canvas) 97%, transparent);
-    border: 1px solid color-mix(in oklab, var(--sc-ink) 14%, transparent);
-    border-radius: 4px;
-    padding: 1.3rem 1.5rem;
-  }
+.voy-eyebrow{
+  font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.2em;
+  text-transform:uppercase; color: color-mix(in oklab, var(--sc-accent) 85%, var(--sc-ink)); margin:0 0 1rem;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.7);
+}
+.voy-tagline{
+  font-family: var(--sc-font-display); font-weight:700; font-size: clamp(2.1rem, 5vw, 3.8rem);
+  line-height:1.05; letter-spacing:-0.01em; color: var(--sc-ink); margin:0; text-wrap:balance;
+  text-shadow: 0 6px 30px rgba(0,0,0,0.75);
+}
+.voy-line{
+  font-family: var(--sc-font-text); font-style:italic; font-weight:400; font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+  color: var(--sc-ink); max-width:32ch; margin:1.1rem 0 0; text-shadow: 0 4px 22px rgba(0,0,0,0.75);
+}
+.voy-manifest{ margin:1.2rem 0 0; padding:0; list-style:none; display:flex; flex-wrap:wrap; gap:0.5em 1em; max-width:36rem; }
+.voy-manifest li{ font-family: var(--sc-font-mono); font-size:0.8rem; letter-spacing:0.03em; color: var(--sc-ink); text-shadow: 0 2px 12px rgba(0,0,0,0.8); white-space:nowrap; }
+.voy-manifest li::before{ content:"·"; color:var(--sc-accent); margin-right:0.5em; }
+.voy-closing-line{ font-family: var(--sc-font-mono); font-size:0.82rem; letter-spacing:0.1em; text-transform:uppercase; color: var(--sc-ink); text-shadow: 0 2px 14px rgba(0,0,0,0.8); }
 
-  /* ---------- hero / flight copy ---------- */
-  .voy-eyebrow{
-    font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.2em;
-    text-transform:uppercase; color: color-mix(in oklab, var(--sc-accent) 80%, var(--sc-ink));
-    margin: 0 0 1rem;
-  }
-  .voy-tagline{
-    font-family: var(--sc-font-display); font-weight:700;
-    font-size: clamp(2rem, 5vw, 3.6rem); line-height:1.05; letter-spacing:-0.01em;
-    color: var(--sc-ink); margin:0; text-wrap:balance;
-  }
-  .voy-line{
-    font-family: var(--sc-font-text); font-style:italic; font-weight:400;
-    font-size: clamp(1.15rem, 2.4vw, 1.55rem); color: var(--sc-ink);
-    max-width: 30ch; margin: 1.1rem 0 0;
-  }
-  .voy-manifest{ margin: 1.2rem 0 0; padding:0; list-style:none;
-    display:flex; flex-wrap:wrap; gap:0.5em 1em; max-width:34rem; }
-  .voy-manifest li{
-    font-family: var(--sc-font-mono); font-size:0.78rem; letter-spacing:0.03em;
-    color: var(--sc-ink-soft); white-space:nowrap;
-  }
-  .voy-manifest li::before{ content:"·"; color:var(--sc-accent); margin-right:0.5em; }
-  .voy-closing-line{
-    font-family: var(--sc-font-mono); font-size:0.8rem; letter-spacing:0.1em;
-    text-transform:uppercase; color: var(--sc-ink-soft); margin-top:0.9rem;
-  }
+/* Cinematic title-card wipe, once, on load. */
+.voy-wipe{ animation: voy-wipe 1.15s cubic-bezier(0.65,0,0.35,1) both; animation-delay: 0.2s; }
+@keyframes voy-wipe{ from{ clip-path: inset(0 100% 0 0); } to{ clip-path: inset(0 0 0 0); } }
+@media (prefers-reduced-motion: reduce){ .voy-wipe{ animation:none; clip-path:none; } }
 
-  /* Cinematic title-card wipe on the hero panel, once, on load. Not scroll
-     driven: the hero is present the instant the page lands (rIn 0 on its
-     copy window), the way a film's own title card holds rather than fading
-     up from a blank first frame. A hard clip-path reveal reads as "a title
-     card being uncovered", which is closer to how a real trailer opens a
-     scene than an opacity cross-fade. */
-  .voy-panel--wipe{
-    animation: voy-wipe 1.1s cubic-bezier(0.65,0,0.35,1) both;
-    animation-delay: 0.15s;
-  }
-  @keyframes voy-wipe{
-    from{ clip-path: inset(0 100% 0 0); }
-    to{ clip-path: inset(0 0 0 0); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .voy-panel--wipe{ animation: none; clip-path: none; }
-  }
+/* ---------- grounded: stats (peak) ---------- */
+.stats-act{ position:relative; }
+.stats-bg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.stats-bg::after{ content:""; }
+.stats-scrim{ position:absolute; inset:0; z-index:1; background: linear-gradient(180deg, rgba(6,7,10,0.55) 0%, rgba(6,7,10,0.78) 55%, rgba(6,7,10,0.92) 100%); }
+.stats-stage{ position:relative; z-index:2; height:100%; display:flex; align-items:center; justify-content:center; }
+.stats-row{ display:flex; flex-wrap:wrap; gap:clamp(2rem,6vw,5rem); justify-content:center; }
+.stat{ text-align:center; }
+.stat .num{ font-family: var(--sc-font-display); font-weight:700; font-size: clamp(2.6rem, 7vw, 4.6rem); color:var(--sc-ink); display:inline-flex; gap:0.15em; align-items:baseline; }
+.stat .num .unit{ font-size:0.4em; font-family:var(--sc-font-mono); color:var(--sc-accent); text-transform:uppercase; }
+.stat p{ font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:var(--sc-ink-soft); margin:0.6rem 0 0; }
 
-  /* ---------- grounded: stats ---------- */
-  .stats-stage{
-    height:100%; display:flex; align-items:center; justify-content:center;
-    background: radial-gradient(120% 90% at 50% 30%, #1a140d 0%, var(--sc-canvas) 62%);
-  }
-  .stats-row{ display:flex; flex-wrap:wrap; gap:clamp(2rem,6vw,5rem); justify-content:center; }
-  .stat{ text-align:center; }
-  .stat .num{
-    font-family: var(--sc-font-display); font-weight:700;
-    font-size: clamp(2.6rem, 7vw, 4.6rem); color:var(--sc-ink); display:inline-flex; gap:0.15em; align-items:baseline;
-  }
-  .stat .num .unit{ font-size:0.4em; font-family:var(--sc-font-mono); color:var(--sc-accent); text-transform:uppercase; }
-  .stat p{ font-family: var(--sc-font-mono); font-size:0.72rem; letter-spacing:0.08em;
-    text-transform:uppercase; color:var(--sc-ink-soft); margin:0.6rem 0 0; }
+/* ---------- testimonials ---------- */
+.voz-rail{ align-items:center; gap: clamp(1.2rem,3vw,2rem); padding-inline: clamp(1.25rem,8vw,10vw); }
+.voz-lead{ flex:0 0 auto; width:min(26rem,70vw); padding-right:2rem; }
+.voz-lead .voy-eyebrow{ margin-bottom:1.2rem; text-shadow:none; }
+.voz-card{
+  flex:0 0 auto; width:min(22rem,76vw); background:var(--sc-surface); border:1px solid var(--sc-hairline);
+  border-radius:var(--sc-r-md); padding:1.8rem; box-shadow:var(--sc-e1);
+  transition: border-color var(--sc-d-slow) var(--sc-ease-out), transform var(--sc-d-slow) var(--sc-ease-out), box-shadow var(--sc-d-slow) var(--sc-ease-out);
+}
+@media (hover:hover) and (pointer:fine){
+  .voz-card:hover{ border-color: color-mix(in oklab, var(--sc-accent) 45%, transparent); box-shadow: var(--sc-e2), 0 0 42px -12px color-mix(in oklab, var(--sc-accent) 55%, transparent); transform: translateY(-4px); }
+}
+.voz-card p{ font-family:var(--sc-font-text); font-style:italic; color:var(--sc-ink); font-size:1.02rem; line-height:1.5; margin:0; }
+.voz-card footer{ margin-top:1.2rem; }
+.voz-card .handle{ font-family:var(--sc-font-mono); font-size:0.78rem; color:var(--sc-accent); }
+.voz-card .role{ display:block; font-size:0.8rem; color:var(--sc-ink-soft); margin-top:0.15rem; }
 
-  /* ---------- grounded: testimonials rail ---------- */
-  .voz-rail{ align-items:center; gap: clamp(1.2rem,3vw,2rem); padding-inline: clamp(1.25rem,8vw,10vw); }
-  .voz-lead{ flex:0 0 auto; width:min(26rem,70vw); padding-right:2rem; }
-  .voz-lead .voy-eyebrow{ margin-bottom:1.2rem; }
-  .voz-card{
-    flex:0 0 auto; width:min(22rem,76vw); background:var(--sc-surface);
-    border:1px solid var(--sc-hairline); border-radius:var(--sc-r-md);
-    padding:1.8rem; box-shadow:var(--sc-e1);
-    transition: border-color var(--sc-d-slow) var(--sc-ease-out), transform var(--sc-d-slow) var(--sc-ease-out), box-shadow var(--sc-d-slow) var(--sc-ease-out);
-  }
-  @media (hover:hover) and (pointer:fine){
-    .voz-card:hover{
-      border-color: color-mix(in oklab, var(--sc-accent) 45%, transparent);
-      box-shadow: var(--sc-e2), 0 0 42px -12px color-mix(in oklab, var(--sc-accent) 55%, transparent);
-      transform: translateY(-4px);
-    }
-  }
-  .voz-card p{ font-family:var(--sc-font-text); font-style:italic; color:var(--sc-ink);
-    font-size:1.02rem; line-height:1.5; margin:0; }
-  .voz-card footer{ margin-top:1.2rem; }
-  .voz-card .handle{ font-family:var(--sc-font-mono); font-size:0.78rem; color:var(--sc-accent); }
-  .voz-card .role{ display:block; font-size:0.8rem; color:var(--sc-ink-soft); margin-top:0.15rem; }
-
-  /* ---------- grounded: close ---------- */
-  .close{ height:100%; display:flex; flex-direction:column; align-items:center;
-    justify-content:center; text-align:center; position:relative; }
-  .close__inner{ max-width:40rem; padding-inline: var(--sc-gutter); }
-  .close .cta{
-    display:inline-flex; align-items:center; gap:0.6em; margin-top:2rem;
-    background:var(--sc-accent); color:var(--sc-accent-ink);
-    font-family:var(--sc-font-display); font-weight:700; font-size:0.95rem;
-    padding:1rem 1.8rem; border-radius:999px; text-decoration:none;
-  }
-  .close .contact-lines{
-    margin-top:2.4rem; font-family:var(--sc-font-mono); font-size:0.8rem;
-    letter-spacing:0.04em; color:var(--sc-ink-soft); line-height:2;
-  }
-  .close .contact-lines a{ color:var(--sc-ink); text-decoration:none; border-bottom:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent); }
-  .foot{
-    position:absolute; bottom:1.6rem; left:0; right:0;
-    display:flex; justify-content:space-between; padding-inline: var(--sc-gutter);
-    font-family:var(--sc-font-mono); font-size:0.68rem; letter-spacing:0.08em;
-    text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 40%, transparent);
-  }
+/* ---------- close ---------- */
+.close{ height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; position:relative; }
+.close__inner{ max-width:40rem; padding-inline: var(--sc-gutter); }
+.close .cta{
+  display:inline-flex; align-items:center; gap:0.6em; margin-top:2rem; background:var(--sc-accent); color:var(--sc-accent-ink);
+  font-family:var(--sc-font-display); font-weight:700; font-size:0.95rem; padding:1rem 1.8rem; border-radius:999px; text-decoration:none;
+}
+.close .contact-lines{ margin-top:2.4rem; font-family:var(--sc-font-mono); font-size:0.8rem; letter-spacing:0.04em; color:var(--sc-ink-soft); line-height:2; }
+.close .contact-lines a{ color:var(--sc-ink); text-decoration:none; border-bottom:1px solid color-mix(in oklab, var(--sc-ink) 30%, transparent); }
+.foot{ position:absolute; bottom:1.6rem; left:0; right:0; display:flex; justify-content:space-between; padding-inline: var(--sc-gutter); font-family:var(--sc-font-mono); font-size:0.68rem; letter-spacing:0.08em; text-transform:uppercase; color: color-mix(in oklab, var(--sc-ink) 40%, transparent); }
 </style>
 </head>
 <body>
@@ -248,13 +154,8 @@
   <a class="cta-small" href="#contato">Falar com a Voy</a>
 </header>
 
-<div class="telemetry tl" id="tm-left">
-  Setor<br><b id="tm-sector">Órbita</b>
-</div>
-<div class="telemetry tr" id="tm-right">
-  Trajetória<br><b id="tm-pct">000%</b>
-  <div class="track"><div class="fill" id="tm-fill"></div></div>
-</div>
+<div class="telemetry tl" id="tm-left">Setor<br><b id="tm-sector">Órbita</b></div>
+<div class="telemetry tr" id="tm-right">Trajetória<br><b id="tm-pct">000%</b><div class="track"><div class="fill" id="tm-fill"></div></div></div>
 <div class="telemetry bl" id="tm-corner">Voy // registro de voo</div>
 
 <main id="top">
@@ -262,105 +163,87 @@
   <div id="flight" data-sc-mode="worldflight" data-sc-seam="0.12">
     <div data-sc-world>
 
-      <!-- Spans widened from the previous pass (1.5/1.5/1.7/1.3 -> 1.9/2.0/2.3/1.7). A
-           reference teardown of this exact skill flagged, twice, independently, the
-           single most common failure of a scroll-driven site: motion that resolves
-           before the reader has scrolled far enough to actually watch it happen. The
-           push-in and the flying chips are both driven by the leg's own local
-           progress, so widening the leg is the one change that slows everything
-           inside it at once, proportionally, with no other code touched. -->
       <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.32" data-sc-waypoint="Órbita">
-        <div class="scene scene--orbita" id="scene-0">
-          <img data-sc-poster src="assets/seg-orbita.jpg" alt="Astronauta observando uma galáxia espiral, cercado por painéis holográficos e meteoros">
-        </div>
+        <img data-sc-poster src="assets/cine-orbita.jpg" alt="Astronauta no topo de um penhasco rochoso, observando uma galáxia espiral distante">
       </div>
 
-      <div data-sc-segment data-sc-w="2.0" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
-        <div class="scene scene--aproximacao" id="scene-1">
-          <img data-sc-poster src="assets/seg-aproximacao.jpg" alt="Astronauta com o capacete iluminado, cercado por painéis holográficos, sobre uma superfície rochosa">
-        </div>
+      <div data-sc-segment data-sc-w="2.1" data-sc-linger="0.3" data-sc-waypoint="Aproximação">
+        <img data-sc-poster src="assets/cine-aproximacao.jpg" alt="Astronauta estendendo a mão em direção a uma sonda espacial dourada, no espírito da Voyager">
       </div>
 
-      <div data-sc-segment data-sc-w="2.3" data-sc-linger="0.34" data-sc-waypoint="Revelação">
-        <div class="scene scene--revelacao" id="scene-2">
-          <img data-sc-poster src="assets/seg-revelacao.jpg" alt="Astronauta observando um satélite e duas galáxias espirais, painéis holográficos ao redor">
-        </div>
+      <div data-sc-segment data-sc-w="2.0" data-sc-linger="0.34" data-sc-waypoint="Revelação">
+        <img data-sc-poster src="assets/cine-revelacao.jpg" alt="Close no visor do capacete de um astronauta, refletindo a sonda espacial contra uma nebulosa">
       </div>
 
-      <div data-sc-segment data-sc-w="1.7" data-sc-linger="0.3" data-sc-waypoint="Pouso">
-        <div class="scene scene--pouso" id="scene-3">
-          <img data-sc-poster src="assets/seg-pouso.jpg" alt="Astronauta em silhueta contra um horizonte iluminado em tons quentes, planeta ao fundo">
-        </div>
+      <div data-sc-segment data-sc-w="1.5" data-sc-linger="0.28" data-sc-waypoint="Trajetória">
+        <img data-sc-poster src="assets/cine-trajetoria.jpg" alt="Astronauta caminhando por um corredor iluminado de uma espaçonave">
+      </div>
+
+      <div data-sc-segment data-sc-w="1.9" data-sc-linger="0.3" data-sc-waypoint="Pouso">
+        <img data-sc-poster src="assets/cine-pouso.jpg" alt="Astronauta em silhueta caminhando em direção a uma porta iluminada por luz dourada">
       </div>
 
     </div>
 
     <div data-sc-world-copy>
-      <div class="sc-world__scrim sc-scrim sc-scrim--vignette" aria-hidden="true"></div>
+      <div class="sc-world__scrim sc-scrim sc-scrim--band" aria-hidden="true"></div>
 
       <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="hero">
-        <div class="voy-panel voy-panel--wipe">
+        <div class="voy-wipe">
           <p class="voy-eyebrow">Porto Alegre · Rio Grande do Sul</p>
           <h1 class="voy-tagline">A Voy transforma ideias em imagens que ficam.</h1>
         </div>
       </div>
 
-      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.25 0.48 0.4 0.3">
-        <div class="voy-panel">
-          <p class="voy-line">Somos uma produtora audiovisual em crescimento no Rio Grande do Sul, com tecnologia de ponta e uma equipe que vive para contar histórias.</p>
-        </div>
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="0.21 0.42 0.35 0.3">
+        <p class="voy-line">Somos uma produtora audiovisual em crescimento no Rio Grande do Sul, com tecnologia de ponta e uma equipe que vive para contar histórias.</p>
       </div>
 
-      <div class="sc-copy sc-copy--center" data-sc-copy data-sc-window="0.51 0.77 0.35 0.3">
-        <div class="voy-panel">
-          <p class="voy-eyebrow">Já ajudamos marcas como</p>
-          <ul class="voy-manifest">
-            <li>Globo</li><li>Dell</li><li>Cyrela</li><li>Melnick</li><li>CCR</li>
-            <li>Bud</li><li>Igui</li><li>ATM</li><li>Net</li><li>Branri</li><li>Chilli</li>
-          </ul>
-          <p class="voy-line" style="font-style:normal;font-size:1.02rem;max-width:36ch;">a comunicarem o que realmente importa: com criatividade, estratégia e resultado.</p>
-        </div>
+      <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="0.43 0.63 0.3 0.3">
+        <p class="voy-eyebrow">Já ajudamos marcas como</p>
+        <ul class="voy-manifest">
+          <li>Globo</li><li>Dell</li><li>Cyrela</li><li>Melnick</li><li>CCR</li>
+          <li>Bud</li><li>Igui</li><li>ATM</li><li>Net</li><li>Branri</li><li>Chilli</li>
+        </ul>
+        <p class="voy-line" style="font-style:normal;font-size:1.02rem;max-width:36ch;">a comunicarem o que realmente importa: com criatividade, estratégia e resultado.</p>
       </div>
 
-      <div class="sc-copy sc-copy--lead" data-sc-copy data-sc-window="0.86 1 0 0">
-        <div class="voy-panel">
-          <p class="voy-closing-line" style="margin-top:0;">Da órbita para Porto Alegre.</p>
-        </div>
-      </div>
-    </div>
+      <!-- Trajetória (corredor) carries no copy on purpose: an authored beat of
+           quiet after the client-manifest reveal, before the closing line -
+           not dead scroll, a deliberate breath. -->
 
-    <div class="scene-chip" id="chip-camera">
-      <img src="assets/chip-camera.jpg" alt="Câmera de cinema em tripé, sob luz de estúdio">
-      <span class="cap">Câmera · lentes de cinema</span>
-    </div>
-    <div class="scene-chip" id="chip-drone">
-      <img src="assets/chip-drone.jpg" alt="Drone sobrevoando uma cidade">
-      <span class="cap">Captação aérea</span>
+      <div class="sc-copy sc-copy--trail" data-sc-copy data-sc-window="finale">
+        <p class="voy-closing-line">Da órbita para Porto Alegre.</p>
+      </div>
     </div>
 
     <div data-sc-spacer aria-hidden="true"></div>
   </div>
 
-  <section data-sc-act="pin" data-sc-span="1.3" data-sc-drift="#171310">
-    <div data-sc-stage class="stats-stage">
-      <div class="stats-row" data-sc-cue="0.08 0.9" data-sc-rise="0.5">
-        <div class="stat">
-          <span class="num"><span data-sc-count="0 15" data-sc-count-at="0.05 0.4">0</span><span class="unit">mil</span></span>
-          <p>produções realizadas</p>
-        </div>
-        <div class="stat">
-          <span class="num"><span data-sc-count="0 800" data-sc-count-at="0.1 0.45">0</span></span>
-          <p>marcas atendidas</p>
-        </div>
-        <div class="stat">
-          <span class="num"><span data-sc-count="0 10" data-sc-count-at="0.15 0.5">0</span><span class="unit">anos</span></span>
-          <p>de experiência</p>
+  <section class="stats-act" data-sc-act="pin" data-sc-span="1.3" data-sc-drift="#171310">
+    <div data-sc-stage>
+      <img class="stats-bg" src="assets/cine-stats.jpg" alt="Astronauta flutuando em órbita, com a Terra ao fundo">
+      <div class="stats-scrim" aria-hidden="true"></div>
+      <div class="stats-stage">
+        <div class="stats-row" data-sc-cue="0.1 0.9" data-sc-rise="0.5">
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 15" data-sc-count-at="0.08 0.45">0</span><span class="unit">mil</span></span>
+            <p>produções realizadas</p>
+          </div>
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 800" data-sc-count-at="0.13 0.5">0</span></span>
+            <p>marcas atendidas</p>
+          </div>
+          <div class="stat">
+            <span class="num"><span data-sc-count="0 10" data-sc-count-at="0.18 0.55">0</span><span class="unit">anos</span></span>
+            <p>de experiência</p>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-  <section data-sc-act="pan" data-sc-span="3.1" data-sc-drift="#101217">
+  <section data-sc-act="pan" data-sc-span="3.0" data-sc-drift="#101217">
     <div data-sc-stage>
       <div class="rail voz-rail" data-sc-pan="0.08">
         <div class="voz-lead sc-stack">
@@ -368,36 +251,12 @@
           <h2 class="sc-display sc-display--md">Quem já voou com a gente.</h2>
           <p class="sc-body">Depoimentos reais, tirados do site atual da Voy.</p>
         </div>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"Nosso vídeo foi o vídeo com maior visualização na história de nosso município."</p>
-          <footer><span class="handle">@gilmarcarvalhors</span><span class="role">Candidato a Prefeito de Encruzilhada do Sul</span></footer>
-        </article>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"Rafael Vargas é um estúdio ambulante de criatividade, com muita competência e profissionalismo."</p>
-          <footer><span class="handle">@edukautz</span><span class="role">CEO, DMBank</span></footer>
-        </article>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"Desafiei o Rafael a atualizar nossa marca. Ele conseguiu inová-la sem tirar a sua essência."</p>
-          <footer><span class="handle">@barbaraimobiliaria</span><span class="role">Empreendedora</span></footer>
-        </article>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"A Voy criou toda identidade visual e um website de altíssima qualidade, tudo entregue super rápido."</p>
-          <footer><span class="handle">@geotropico</span><span class="role">Diretor, Geotrópico</span></footer>
-        </article>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"Vídeo para minha empresa ficou perfeito e me ajudou muito nas vendas."</p>
-          <footer><span class="handle">@mselitebox</span><span class="role">CEO, Elite Box</span></footer>
-        </article>
-
-        <article class="voz-card" data-sc-tilt="5">
-          <p>"Já fizemos diversos vídeos e videoclipes juntos e a qualidade é sempre brutal."</p>
-          <footer><span class="handle">@andresarate</span><span class="role">DJ / Produtor Musical</span></footer>
-        </article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Nosso vídeo foi o vídeo com maior visualização na história de nosso município."</p><footer><span class="handle">@gilmarcarvalhors</span><span class="role">Candidato a Prefeito de Encruzilhada do Sul</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Rafael Vargas é um estúdio ambulante de criatividade, com muita competência e profissionalismo."</p><footer><span class="handle">@edukautz</span><span class="role">CEO, DMBank</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Desafiei o Rafael a atualizar nossa marca. Ele conseguiu inová-la sem tirar a sua essência."</p><footer><span class="handle">@barbaraimobiliaria</span><span class="role">Empreendedora</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"A Voy criou toda identidade visual e um website de altíssima qualidade, tudo entregue super rápido."</p><footer><span class="handle">@geotropico</span><span class="role">Diretor, Geotrópico</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Vídeo para minha empresa ficou perfeito e me ajudou muito nas vendas."</p><footer><span class="handle">@mselitebox</span><span class="role">CEO, Elite Box</span></footer></article>
+        <article class="voz-card" data-sc-tilt="5"><p>"Já fizemos diversos vídeos e videoclipes juntos e a qualidade é sempre brutal."</p><footer><span class="handle">@andresarate</span><span class="role">DJ / Produtor Musical</span></footer></article>
       </div>
     </div>
   </section>
@@ -405,7 +264,7 @@
   <section id="contato" data-sc-act="pin" data-sc-span="1.2" data-sc-drift="#07080a">
     <div data-sc-stage class="close" data-sc-spotlight>
       <div class="close__inner">
-        <p class="voy-eyebrow">Próximo passo</p>
+        <p class="voy-eyebrow" style="text-shadow:none;" data-sc-cue="0.05">Próximo passo</p>
         <h2 class="sc-display sc-display--lg" data-sc-cue="0.08" data-sc-kinetic="lines">Qual é a história que a sua empresa ainda não contou?</h2>
         <a class="cta" href="mailto:contato@produtoravoy.com.br" data-sc-magnet="0.24" data-sc-cue="0.1" data-sc-rise="0">Falar com a Voy</a>
         <div class="contact-lines" data-sc-cue="0.12" data-sc-rise="0">
@@ -414,10 +273,7 @@
           <div>Porto Alegre · Rio Grande do Sul</div>
         </div>
       </div>
-      <footer class="foot">
-        <span>Produtora Voy</span>
-        <span>@produtoravoy</span>
-      </footer>
+      <footer class="foot"><span>Produtora Voy</span><span>@produtoravoy</span></footer>
     </div>
   </section>
 
@@ -433,87 +289,22 @@
     var fillEl = document.getElementById('tm-fill');
     var flightEl = document.getElementById('flight');
     var rails = [document.getElementById('tm-left'), document.getElementById('tm-right'), document.getElementById('tm-corner')];
-    var docEl = document.documentElement;
-    var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     document.addEventListener('sc:waypoint', function (e) {
       if (e.detail && e.detail.label) sectorEl.textContent = e.detail.label;
     });
 
-    // Bespoke per-leg zoom-through: the engine's own poster push-in tops out
-    // at 1.17x over a stage's ENTIRE on-screen life, which is correct for a
-    // photo that plays across a full pinned act but reads as barely-there
-    // once four legs share a similar subject and only ~1vh of dwell each.
-    // This wrapper scale stacks on top of the engine's own transform (nested
-    // elements), driven straight off --sc-seg / --sc-segp so it needs no
-    // measuring of its own. eased with a quick ease-out so the "arrival" at
-    // each leg's midpoint (linger already slows the engine's own clip there)
-    // lands on a held, legible frame rather than a still-moving one.
-    var scenes = [0, 1, 2, 3].map(function (i) { return document.getElementById('scene-' + i); });
-    function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
-
-    // Flying equipment reveals: real, different content (camera, drone/city)
-    // layered as foreground cards so the legs read as distinct scenes even
-    // where the backdrop renders share a family resemblance. Each is scoped
-    // to one leg via segIndex; it flies up from off-screen, holds near the
-    // leg's own linger plateau, then drops back out before the next leg's
-    // crossfade begins, clear of the seam so it never doubles with the copy
-    // panel above it.
-    var chipCamera = document.getElementById('chip-camera');
-    var chipDrone = document.getElementById('chip-drone');
-    function driveChip(el, active, local, fromSide) {
-      var w = active ? clamp01((local - 0.08) / 0.22) : 0;         // fly in
-      var hold = active ? clamp01(1 - Math.max(0, local - 0.62) / 0.3) : 0; // fly out
-      var v = Math.min(w, hold);
-      var e = easeOutCubic(v);
-      var x = (1 - e) * (fromSide === 'right' ? 60 : -60);
-      var y = (1 - e) * 40;
-      el.style.opacity = (v).toFixed(3);
-      el.style.transform = reduce ? 'none' : 'translate3d(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px,0) scale(' + (0.86 + e * 0.14).toFixed(3) + ')';
-    }
-    function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
-
     function frame() {
-      var segRaw = getComputedStyle(docEl).getPropertyValue('--sc-seg');
-      var segp = parseFloat(getComputedStyle(docEl).getPropertyValue('--sc-segp')) || 0;
-      var seg = parseInt(segRaw, 10);
-      if (isNaN(seg)) seg = 0;
-
+      var segp = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sc-segp')) || 0;
       var pct = Math.round(segp * 100);
       pctEl.textContent = String(pct).padStart(3, '0') + '%';
       fillEl.style.width = pct + '%';
 
-      if (!reduce) {
-        for (var i = 0; i < scenes.length; i++) {
-          if (!scenes[i]) continue;
-          var s = i === seg ? (1 + easeOutCubic(segp) * 0.55) : 1;
-          scenes[i].style.transform = 'scale(' + s.toFixed(4) + ')';
-        }
-      }
-
-      // chip 0 (camera) rides leg 1 (Aproximação), chip 1 (drone) rides leg 2
-      // (Revelação) — the two legs whose copy is about capability, not the
-      // opening establishing shot or the landing.
-      if (chipCamera) {
-        chipCamera.style.left = 'clamp(1.25rem, 6vw, 4rem)';
-        chipCamera.style.bottom = 'clamp(6rem, 16vh, 11rem)';
-        driveChip(chipCamera, seg === 1, segp, 'left');
-      }
-      if (chipDrone) {
-        chipDrone.style.right = 'clamp(1.25rem, 6vw, 4rem)';
-        chipDrone.style.top = 'clamp(6rem, 18vh, 12rem)';
-        driveChip(chipDrone, seg === 2, segp, 'right');
-      }
-
       var r = flightEl.getBoundingClientRect();
       var inFlight = r.bottom > 0 && r.top < innerHeight * 0.98;
-      // visibility as a hard backstop, not just opacity: a CSS transition can
-      // settle a hair short of exact 0 (it did, at ~0.01), and a "nearly
-      // invisible" telemetry readout still composites as a faint ghost right
-      // where the grounded footer sits, ruining that text instead of this one.
-      for (var j = 0; j < rails.length; j++) {
-        rails[j].style.opacity = inFlight ? '1' : '0';
-        rails[j].style.visibility = inFlight ? 'visible' : 'hidden';
+      for (var i = 0; i < rails.length; i++) {
+        rails[i].style.opacity = inFlight ? '1' : '0';
+        rails[i].style.visibility = inFlight ? 'visible' : 'hidden';
       }
       flightEl.classList.toggle('is-past', !inFlight);
 
