@@ -11,6 +11,7 @@
 | 01 | [Relatório Semanal Meta Ads](./01-meta-ads-reporting) | Agência de Marketing | n8n · Facebook API · GPT-4o · WhatsApp |
 | 02 | [Automação de E-commerce](./02-ecommerce-automation) | Loja Virtual | n8n · RabbitMQ · Redis · GPT-4.1 |
 | 03 | [Agente SDR com IA — Sophia](./03-agente-sdr-sophia) | Clínica Estética | n8n · GPT-4.1 · Supabase · Google Calendar |
+| 04 | [Ficha Técnica SaaS](./04-ficha-tecnica-saas) | Food Service | Next.js · TypeScript · Supabase · Recharts |
 
 ---
 
