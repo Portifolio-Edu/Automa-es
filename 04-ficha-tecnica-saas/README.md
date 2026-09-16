@@ -39,7 +39,7 @@ Next.js · React · TypeScript · Tailwind · shadcn/ui · Recharts · Supabase 
 
 ## 📁 Neste diretório
 - [`mockup/ficha-tecnica-mvp.jsx`](./mockup/ficha-tecnica-mvp.jsx) — especificação viva das telas (React + Recharts), com as 12 abas do produto e as regras de negócio já validadas tela a tela.
-- [`app/`](./app) — projeto Next.js 15 (App Router, TypeScript, Tailwind v4, shadcn/ui) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, 27 tabelas, RLS por `auth.uid()`) e do motor de cálculo (`src/lib/calculo/`, funções puras com 39 testes unitários cobrindo a seção 5 do handoff). Auth (login e cadastro de restaurante), CRUD de insumo/receita/preparo base, estoque com fornecedores e produção com kanban de arrastar-e-soltar já funcionam, com o mesmo visual do mockup.
+- [`app/`](./app) — projeto Next.js 15 (App Router, TypeScript, Tailwind v4, shadcn/ui) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, 27 tabelas, RLS por `auth.uid()`) e do motor de cálculo (`src/lib/calculo/`, funções puras com 39 testes unitários cobrindo a seção 5 do handoff). Auth (login e cadastro de restaurante), CRUD de insumo/receita/preparo base, estoque com fornecedores, produção com kanban de arrastar-e-soltar, manipulação de proteína (FC observado por lote, com gráfico) e fechamento de CMV com importação de vendas já funcionam, com o mesmo visual do mockup.
 
 ## 📈 Status
 Estimativa de 2 a 3 semanas até rodar com cardápio real, piloto testando em paralelo a partir da etapa de estoque/produção. Ordem de construção, schema completo e todas as fórmulas com regra de teste unitário estão documentados no handoff técnico interno do projeto.
