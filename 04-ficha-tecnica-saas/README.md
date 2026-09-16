@@ -30,7 +30,7 @@ iFood registrou 335 mil novos parceiros em 2025 (~918 restaurantes/dia). Base de
 Tabela nutricional com os 10 itens obrigatórios, VDR do Anexo II e selo frontal (lupa) calculado por 100g/100mL — nunca por porção — para açúcar adicionado, gordura saturada e sódio. `nutricional_override` permite que um laudo laboratorial substitua o cálculo por composição. Sistema deixa explícito o que não resolve sozinho: validação por nutricionista, lista de ingredientes, alérgenos e regularização sanitária ficam como pendência, não como caixa marcada.
 
 ## 🛠️ Stack
-Next.js · React · TypeScript · Tailwind · shadcn/ui · Recharts · Supabase (Postgres + RLS) · n8n (futuro)
+Next.js · React · TypeScript · Tailwind · shadcn/ui · Recharts · @react-pdf/renderer · Supabase (Postgres + RLS) · n8n (futuro)
 
 ## 📦 Escopo do MVP
 **Dentro:** insumo, receita e preparo próprio, fator de correção medido, CMV, precificação por canal, estoque, produção com kanban, manipulação de proteína, checklists de turno, ficha nutricional, temperatura, fechamento de CMV, relatórios.
@@ -39,7 +39,7 @@ Next.js · React · TypeScript · Tailwind · shadcn/ui · Recharts · Supabase 
 
 ## 📁 Neste diretório
 - [`mockup/ficha-tecnica-mvp.jsx`](./mockup/ficha-tecnica-mvp.jsx) — especificação viva das telas (React + Recharts), com as 12 abas do produto e as regras de negócio já validadas tela a tela.
-- [`app/`](./app) — projeto Next.js 15 (App Router, TypeScript, Tailwind v4, shadcn/ui) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, 27 tabelas, RLS por `auth.uid()`) e do motor de cálculo (`src/lib/calculo/`, funções puras com 39 testes unitários cobrindo a seção 5 do handoff). Todo item do menu lateral do mockup tem tela funcionando de verdade, exceto Configurações: auth, CRUD de insumo/receita/preparo base, estoque com fornecedores, produção com kanban, manipulação de proteína, fechamento de CMV com importação de vendas, relatórios, ficha nutricional (com rotulagem e laudo laboratorial), segurança alimentar (temperatura) e checklists de turno — mesmo visual do mockup em todas.
+- [`app/`](./app) — projeto Next.js 15 (App Router, TypeScript, Tailwind v4, shadcn/ui) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, 27 tabelas, RLS por `auth.uid()`) e do motor de cálculo (`src/lib/calculo/`, funções puras com 39 testes unitários cobrindo a seção 5 do handoff). Todo item do menu lateral do mockup tem tela funcionando de verdade, exceto Configurações: auth, CRUD de insumo/receita/preparo base, estoque com fornecedores, produção com kanban, manipulação de proteína, fechamento de CMV com importação de vendas, relatórios, ficha nutricional (com rotulagem e laudo laboratorial), segurança alimentar (temperatura) e checklists de turno — mesmo visual do mockup em todas. Gera os 3 PDFs da seção 6 do handoff (ficha de custos, ficha operacional e rótulo nutricional com fundo branco/letra preta obrigatórios) direto no navegador, sem servidor.
 
 ## 📈 Status
 MVP completo nas 12 telas do mockup. Próximo passo é validar com cardápio real do piloto (Eduardo) e ajustar o que a operação de verdade pedir — schema e regras de negócio já estão testados, o que falta é o atrito real de uso diário. Ordem de construção, schema completo e todas as fórmulas com regra de teste unitário estão documentados no handoff técnico interno do projeto.
