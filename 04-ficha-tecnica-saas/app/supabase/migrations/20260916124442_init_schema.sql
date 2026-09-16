@@ -1,25 +1,19 @@
 -- Ficha Tecnica SaaS - initial schema + row level security
 --
--- Multi-tenancy model: every authenticated request carries a `cliente_id`
--- custom claim in its JWT (set by a Supabase Auth hook when the user signs
--- in / is provisioned). auth_cliente_id() reads that claim once and every
--- policy below is written against it, so a compromised or buggy query can
--- never leak rows across tenants -- the database enforces the boundary,
--- not the application code.
+-- Multi-tenancy model: `clientes` is the tenant (the restaurant). Each tenant
+-- is owned by exactly one Supabase Auth user via clientes.user_id -- the MVP
+-- is single-login-per-restaurant (handoff doc, secao 8, passo 2: "Auth e
+-- onboarding de restaurante"). Every policy below is written directly against
+-- auth.uid(), as requested, either on clientes.user_id itself or, for every
+-- other table, through the auth_cliente_id() helper that resolves the
+-- caller's own cliente_id from it.
 --
 -- Tables reachable only through a parent (receita_insumos, estoque,
--- checklist_itens, ...) are scoped by an EXISTS join to their parent
--- instead of duplicating cliente_id on every leaf table.
+-- checklist_itens, ...) are scoped by an EXISTS join up to their nearest
+-- ancestor that carries cliente_id, instead of duplicating the column on
+-- every leaf table.
 
 create extension if not exists pgcrypto;
-
-create or replace function auth_cliente_id()
-returns uuid
-language sql
-stable
-as $$
-  select nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'cliente_id', '')::uuid
-$$;
 
 -- =========================================================================
 -- clientes
@@ -27,26 +21,43 @@ $$;
 
 create table clientes (
   id uuid primary key default gen_random_uuid(),
+  user_id uuid not null unique references auth.users(id) on delete cascade,
   nome text not null,
   nome_restaurante text not null,
   telefone text not null unique,
   cnpj text,
   plano text not null default 'trial',
   status_assinatura text not null default 'trial',
-  margem_alvo numeric not null default 0.65,
+  margem_alvo numeric not null default 0.65 check (margem_alvo >= 0 and margem_alvo < 1),
   criado_em timestamptz not null default now()
 );
 
 alter table clientes enable row level security;
 
+-- Policy direto em auth.uid(): esta é a única tabela que não passa pelo
+-- helper auth_cliente_id(), porque o helper consulta esta própria tabela
+-- (evita recursão de RLS).
 create policy clientes_self on clientes
   for all
-  using (id = auth_cliente_id())
-  with check (id = auth_cliente_id());
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid());
+
+-- Helper usado por toda política abaixo. security definer + search_path
+-- travado é o padrão recomendado pela Supabase para evitar reavaliação
+-- recursiva da RLS de "clientes" a cada linha checada em outra tabela.
+create or replace function auth_cliente_id()
+returns uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select id from clientes where user_id = auth.uid()
+$$;
 
 create table locais_armazenamento (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   nome text not null,
   temperatura_min_c numeric,
   temperatura_max_c numeric
@@ -65,7 +76,7 @@ create policy locais_armazenamento_tenant on locais_armazenamento
 
 create table insumos (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   nome text not null,
   categoria text not null default 'outro'
     check (categoria in ('proteina', 'hortalica', 'fruta', 'laticinio', 'tempero', 'embalagem', 'outro')),
@@ -74,12 +85,12 @@ create table insumos (
   preco_embalagem numeric not null check (preco_embalagem >= 0),
   preco_unitario numeric generated always as (preco_embalagem / nullif(tamanho_embalagem, 0)) stored,
   fator_correcao numeric not null default 1 check (fator_correcao > 0),
-  peso_por_unidade numeric,
+  peso_por_unidade numeric,  -- só quando unidade_medida = 'un'
   local_armazenamento_id uuid references locais_armazenamento(id),
   atualizado_em timestamptz not null default now()
 );
--- categoria NAO pode ser inferida do fator de correcao: fruta e hortalica tambem
--- tem FC > 1. A aba de proteinas filtra por categoria = 'proteina'.
+-- categoria NÃO pode ser inferida do fator de correção: fruta e hortaliça também
+-- têm FC > 1. A aba de proteínas filtra por categoria = 'proteina'.
 
 create index insumos_cliente_id_idx on insumos(cliente_id);
 
@@ -90,8 +101,9 @@ create policy insumos_tenant on insumos
   using (cliente_id = auth_cliente_id())
   with check (cliente_id = auth_cliente_id());
 
--- Catalogo geral (nao por cliente): sugere FC ao cadastrar insumo novo.
--- Somente leitura para tenants; escrita reservada ao service role (seed/curadoria).
+-- Catálogo geral (não por cliente): sugere FC ao cadastrar insumo novo.
+-- Leitura liberada pra qualquer usuário autenticado; escrita reservada ao
+-- service role (seed/curadoria), por isso não há policy de insert/update aqui.
 create table fatores_correcao_referencia (
   id uuid primary key default gen_random_uuid(),
   nome_alimento text not null,
@@ -103,11 +115,12 @@ alter table fatores_correcao_referencia enable row level security;
 
 create policy fatores_correcao_referencia_read on fatores_correcao_referencia
   for select
+  to authenticated
   using (true);
 
 create table historico_preco_insumo (
   id uuid primary key default gen_random_uuid(),
-  insumo_id uuid not null references insumos(id),
+  insumo_id uuid not null references insumos(id) on delete cascade,
   preco_anterior numeric not null,
   preco_novo numeric not null,
   alterado_em timestamptz not null default now()
@@ -124,17 +137,17 @@ create policy historico_preco_insumo_tenant on historico_preco_insumo
 
 create table receitas (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   nome_prato text not null,
   categoria text,
   tipo text not null default 'prato_final' check (tipo in ('prato_final', 'preparo_base')),
-  preco_venda numeric,
+  preco_venda numeric,  -- null quando preparo_base
   vendas_mes integer,
   rendimento numeric not null default 1 check (rendimento > 0),
-  unidade_rendimento text not null default 'porcao',
-  peso_porcao_g numeric,
+  unidade_rendimento text not null default 'porção',
+  peso_porcao_g numeric,  -- necessário pro cálculo por 100g
   forma_fisica text default 'solido' check (forma_fisica in ('solido', 'liquido')),
-  margem_alvo numeric,
+  margem_alvo numeric check (margem_alvo is null or (margem_alvo >= 0 and margem_alvo < 1)),  -- sobrescreve clientes.margem_alvo
   destino_venda text not null default 'proprio' check (destino_venda in ('proprio', 'varejo_terceiro')),
   modo_preparo text,
   foto_url text,
@@ -156,7 +169,7 @@ create policy receitas_tenant on receitas
 
 create table receita_insumos (
   id uuid primary key default gen_random_uuid(),
-  receita_id uuid not null references receitas(id),
+  receita_id uuid not null references receitas(id) on delete cascade,
   insumo_id uuid references insumos(id),
   sub_receita_id uuid references receitas(id),
   peso_liquido numeric not null check (peso_liquido > 0),
@@ -180,8 +193,8 @@ create policy receita_insumos_tenant on receita_insumos
 
 create table receita_embalagens (
   id uuid primary key default gen_random_uuid(),
-  receita_id uuid not null references receitas(id),
-  insumo_id uuid not null references insumos(id)
+  receita_id uuid not null references receitas(id) on delete cascade,
+  insumo_id uuid not null references insumos(id)  -- insumo com categoria = 'embalagem'
 );
 
 create index receita_embalagens_receita_id_idx on receita_embalagens(receita_id);
@@ -195,14 +208,14 @@ create policy receita_embalagens_tenant on receita_embalagens
 
 create table fichas_tecnicas (
   id uuid primary key default gen_random_uuid(),
-  receita_id uuid not null references receitas(id),
+  receita_id uuid not null references receitas(id) on delete cascade,
   cmv_calculado numeric not null,
   margem_calculada numeric not null,
   preco_sugerido numeric,
   pdf_url text,
   gerado_em timestamptz not null default now()
 );
--- gerado_em da o grafico de CMV no tempo de graca, sem tabela extra
+-- gerado_em dá o gráfico de CMV no tempo de graça, sem tabela extra
 
 create index fichas_tecnicas_receita_id_idx on fichas_tecnicas(receita_id);
 
@@ -219,11 +232,11 @@ create policy fichas_tecnicas_tenant on fichas_tecnicas
 
 create table canais_venda (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   nome_canal text not null,
   comissao_percentual numeric not null check (comissao_percentual >= 0 and comissao_percentual < 1),
   taxa_fixa numeric,
-  embala boolean not null default false,
+  embala boolean not null default false,  -- balcão não embala; viagem e delivery sim
   ativo boolean not null default true
 );
 
@@ -238,7 +251,7 @@ create policy canais_venda_tenant on canais_venda
 
 create table precos_canal (
   id uuid primary key default gen_random_uuid(),
-  ficha_tecnica_id uuid not null references fichas_tecnicas(id),
+  ficha_tecnica_id uuid not null references fichas_tecnicas(id) on delete cascade,
   canal_id uuid not null references canais_venda(id),
   preco_sugerido numeric not null,
   margem_liquida_canal numeric not null
@@ -259,7 +272,7 @@ create policy precos_canal_tenant on precos_canal
 
 create table estoque (
   id uuid primary key default gen_random_uuid(),
-  insumo_id uuid not null references insumos(id) unique,
+  insumo_id uuid not null references insumos(id) on delete cascade unique,
   saldo_atual numeric not null default 0,
   estoque_minimo numeric not null default 0,
   atualizado_em timestamptz not null default now()
@@ -274,9 +287,9 @@ create policy estoque_tenant on estoque
 
 create table movimentacoes_estoque (
   id uuid primary key default gen_random_uuid(),
-  insumo_id uuid not null references insumos(id),
+  insumo_id uuid not null references insumos(id) on delete cascade,
   tipo text not null check (tipo in ('entrada', 'saida_venda', 'ajuste')),
-  quantidade numeric not null check (quantidade > 0),
+  quantidade numeric not null check (quantidade > 0),  -- sempre positivo, o tipo decide o sinal
   origem text,
   criado_em timestamptz not null default now()
 );
@@ -292,7 +305,7 @@ create policy movimentacoes_estoque_tenant on movimentacoes_estoque
 
 create table fornecedores (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   empresa text not null,
   contato text,
   telefone text not null,
@@ -302,7 +315,7 @@ create table fornecedores (
   horario_entrega text,
   prazo_urgencia text
 );
--- existe pra que o contato nao saia junto com o gerente que pediu demissao
+-- existe pra que o contato não saia junto com o gerente que pediu demissão
 
 create index fornecedores_cliente_id_idx on fornecedores(cliente_id);
 
@@ -314,13 +327,13 @@ create policy fornecedores_tenant on fornecedores
   with check (cliente_id = auth_cliente_id());
 
 -- =========================================================================
--- producao
+-- produção
 -- =========================================================================
 
 create table turnos (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
-  nome text not null,
+  cliente_id uuid not null references clientes(id) on delete cascade,
+  nome text not null,  -- Manhã, Tarde, Noite
   horario text
 );
 
@@ -335,7 +348,7 @@ create policy turnos_tenant on turnos
 
 create table producoes (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   lote text not null,
   receita_id uuid not null references receitas(id),
   quantidade numeric not null check (quantidade > 0),
@@ -350,9 +363,9 @@ create table producoes (
     status <> 'perda' or motivo_perda is not null
   )
 );
--- motivo_perda obrigatorio quando status = 'perda': perda sem motivo nao serve
--- pra investigar nada depois. Reforcado aqui (nao so na aplicacao) porque
--- e a unica garantia contra um insert direto via service role.
+-- motivo_perda obrigatório quando status = 'perda'. O handoff pede validação
+-- na aplicação; a constraint aqui é defesa em profundidade -- perda sem
+-- motivo não serve pra investigar nada depois, então também barramos no banco.
 
 create index producoes_cliente_id_idx on producoes(cliente_id);
 create index producoes_receita_id_idx on producoes(receita_id);
@@ -366,7 +379,7 @@ create policy producoes_tenant on producoes
 
 create table processamentos_proteina (
   id uuid primary key default gen_random_uuid(),
-  insumo_id uuid not null references insumos(id),
+  insumo_id uuid not null references insumos(id) on delete cascade,
   responsavel text not null,
   peso_bruto_recebido numeric not null check (peso_bruto_recebido > 0),
   valor_pago_kg numeric not null check (valor_pago_kg >= 0),
@@ -385,8 +398,8 @@ create table processamentos_proteina (
     peso_liquido_resultante + peso_aparas_reaproveitaveis <= peso_bruto_recebido
   )
 );
--- peso_descarte_puro e calculado, nunca digitado. A constraint de reconciliacao
--- barra o insert/update se liquido + aparas passar do bruto -- a conta nao fecha.
+-- peso_descarte_puro é calculado, nunca digitado. Se líquido + aparas passar
+-- do bruto a conta não fecha, e a constraint acima barra o salvamento.
 
 create index processamentos_proteina_insumo_id_idx on processamentos_proteina(insumo_id);
 
@@ -403,7 +416,7 @@ create policy processamentos_proteina_tenant on processamentos_proteina
 
 create table checklists (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   nome text not null,
   momento text not null check (momento in ('abertura', 'praca', 'processo', 'fechamento'))
 );
@@ -419,7 +432,7 @@ create policy checklists_tenant on checklists
 
 create table checklist_itens (
   id uuid primary key default gen_random_uuid(),
-  checklist_id uuid not null references checklists(id),
+  checklist_id uuid not null references checklists(id) on delete cascade,
   texto text not null,
   ordem integer not null default 0
 );
@@ -435,13 +448,13 @@ create policy checklist_itens_tenant on checklist_itens
 
 create table checklist_execucoes (
   id uuid primary key default gen_random_uuid(),
-  checklist_item_id uuid not null references checklist_itens(id),
+  checklist_item_id uuid not null references checklist_itens(id) on delete cascade,
   turno_id uuid references turnos(id),
   chefe_turno text,
   responsavel text,
   concluido_em timestamptz not null default now()
 );
--- os modelos entregues sao ponto de partida: cada casa edita, remove e cria o seu
+-- os modelos entregues são ponto de partida: cada casa edita, remove e cria o seu
 
 create index checklist_execucoes_item_id_idx on checklist_execucoes(checklist_item_id);
 
@@ -461,17 +474,17 @@ create policy checklist_execucoes_tenant on checklist_execucoes
   ));
 
 -- =========================================================================
--- nutricional e seguranca alimentar
+-- nutricional e segurança alimentar
 -- =========================================================================
 
 create table valores_nutricionais_insumo (
   id uuid primary key default gen_random_uuid(),
-  insumo_id uuid not null references insumos(id) unique,
+  insumo_id uuid not null references insumos(id) on delete cascade unique,
   base_gramas numeric not null default 100 check (base_gramas > 0),
   calorias_kcal numeric,
   carboidratos_g numeric,
   acucares_totais_g numeric,
-  acucares_adicionados_g numeric,
+  acucares_adicionados_g numeric,  -- campo separado dos totais, a norma exige os dois
   proteinas_g numeric,
   gorduras_totais_g numeric,
   gorduras_saturadas_g numeric,
@@ -489,7 +502,7 @@ create policy valores_nutricionais_insumo_tenant on valores_nutricionais_insumo
 
 create table nutricional_override (
   id uuid primary key default gen_random_uuid(),
-  receita_id uuid not null references receitas(id) unique,
+  receita_id uuid not null references receitas(id) on delete cascade unique,
   origem text not null default 'laudo',
   calorias_kcal numeric, carboidratos_g numeric, acucares_totais_g numeric,
   acucares_adicionados_g numeric, proteinas_g numeric, gorduras_totais_g numeric,
@@ -497,7 +510,7 @@ create table nutricional_override (
   sodio_mg numeric,
   informado_em timestamptz not null default now()
 );
--- quando existe laudo laboratorial, ele prevalece sobre o calculo por composicao
+-- quando existe laudo laboratorial, ele prevalece sobre o cálculo por composição
 
 alter table nutricional_override enable row level security;
 
@@ -508,11 +521,11 @@ create policy nutricional_override_tenant on nutricional_override
 
 create table rotulagem (
   id uuid primary key default gen_random_uuid(),
-  receita_id uuid not null references receitas(id) unique,
+  receita_id uuid not null references receitas(id) on delete cascade unique,
   ingredientes text, alergenos text, gluten text, lactose text,
   fabricante text, endereco text, peso_liquido text, conservacao text
 );
--- todos opcionais: so fazem falta pra quem vende em varejo de terceiro
+-- todos opcionais: só fazem falta pra quem vende em varejo de terceiro
 
 alter table rotulagem enable row level security;
 
@@ -523,13 +536,13 @@ create policy rotulagem_tenant on rotulagem
 
 create table registros_temperatura (
   id uuid primary key default gen_random_uuid(),
-  local_armazenamento_id uuid not null references locais_armazenamento(id),
+  local_armazenamento_id uuid not null references locais_armazenamento(id) on delete cascade,
   temperatura_c numeric not null,
   responsavel text not null,
   registrado_em timestamptz not null default now()
 );
--- "dentro da faixa" NAO e campo salvo, e calculado na leitura contra o local,
--- senao dessincroniza quando a faixa esperada muda
+-- "dentro da faixa" NÃO é campo salvo, é calculado na leitura contra o local,
+-- senão dessincroniza quando a faixa esperada muda
 
 create index registros_temperatura_local_id_idx on registros_temperatura(local_armazenamento_id);
 
@@ -552,7 +565,7 @@ create policy registros_temperatura_tenant on registros_temperatura
 
 create table fechamentos_cmv (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   periodo_inicio date not null,
   periodo_fim date not null,
   estoque_inicial numeric not null,
@@ -574,11 +587,11 @@ create policy fechamentos_cmv_tenant on fechamentos_cmv
 
 create table vendas_periodo (
   id uuid primary key default gen_random_uuid(),
-  fechamento_id uuid not null references fechamentos_cmv(id),
+  fechamento_id uuid not null references fechamentos_cmv(id) on delete cascade,
   receita_id uuid not null references receitas(id),
   quantidade integer not null check (quantidade >= 0)
 );
--- alimentado por importacao (CSV do iFood ou do PDV) ou entrada manual
+-- alimentado por importação (CSV do iFood ou do PDV) ou entrada manual
 
 create index vendas_periodo_fechamento_id_idx on vendas_periodo(fechamento_id);
 
@@ -591,13 +604,13 @@ create policy vendas_periodo_tenant on vendas_periodo
 
 create table event_log (
   id uuid primary key default gen_random_uuid(),
-  cliente_id uuid not null references clientes(id),
+  cliente_id uuid not null references clientes(id) on delete cascade,
   tipo text not null check (tipo in ('margem_baixa', 'estoque_minimo', 'temperatura_fora', 'fc_pior')),
   payload jsonb not null,
   processado_em timestamptz
 );
--- fila de eventos drenada por cron, nao trigger de banco chamando webhook
--- direto -- da reprocessamento e historico auditavel.
+-- fila de eventos drenada por cron, não trigger de banco chamando webhook
+-- direto -- dá reprocessamento e histórico auditável.
 
 create index event_log_cliente_id_idx on event_log(cliente_id);
 create index event_log_pendentes_idx on event_log(cliente_id) where processado_em is null;
