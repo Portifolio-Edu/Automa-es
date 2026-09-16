@@ -2045,6 +2045,7 @@ export default function FichaTecnicaMVP() {
             </div>
           )}
 
+
           {tab === 'nutricional' && (
             <div className="max-w-5xl">
               <h2 className="text-[14px] font-semibold mb-1">Ficha nutricional por porção</h2>
