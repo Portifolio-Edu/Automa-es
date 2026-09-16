@@ -764,6 +764,10 @@ export default function FichaTecnicaMVP() {
   const [showNovaProducao, setShowNovaProducao] = useState(false);
   const [loteArrastando, setLoteArrastando] = useState(null); // { colunaOrigem, item }
   const [colunaAlvo, setColunaAlvo] = useState(null);
+  // window.prompt não funciona dentro do iframe sandboxed do preview (o navegador
+  // bloqueia diálogo nativo sem permissão de modal) -- por isso o motivo da perda
+  // é pedido num modal próprio, não no prompt() do navegador.
+  const [modalPerda, setModalPerda] = useState(null); // { loteId, motivo }
   const [estoque, setEstoque] = useState(estoqueBase);
   const [buscaInsumo, setBuscaInsumo] = useState('');
   const [showNovoEstoque, setShowNovoEstoque] = useState(false);
@@ -988,8 +992,7 @@ export default function FichaTecnicaMVP() {
     if (colunaOrigem === 'estoque' && destino === 'em_producao') {
       iniciarProducao(item);
     } else if (destino === 'perda') {
-      const motivo = window.prompt('O que aconteceu com esse lote?');
-      if (motivo && motivo.trim()) moverLote(item.id, 'perda', motivo.trim());
+      setModalPerda({ loteId: item.id, motivo: '' });
     } else {
       moverLote(item.id, destino);
     }
@@ -1655,10 +1658,7 @@ export default function FichaTecnicaMVP() {
                                 <div className="flex gap-1.5 mt-2">
                                   <button onClick={() => moverLote(pr.id, 'produzido')} className="flex-1 text-[11px] font-medium py-1.5 rounded-md" style={{ background: C.text, color: '#fff' }}>Concluir</button>
                                   <button
-                                    onClick={() => {
-                                      const motivo = window.prompt('O que aconteceu com esse lote?');
-                                      if (motivo && motivo.trim()) moverLote(pr.id, 'perda', motivo.trim());
-                                    }}
+                                    onClick={() => setModalPerda({ loteId: pr.id, motivo: '' })}
                                     className="text-[11px] font-medium py-1.5 px-2 rounded-md"
                                     style={{ border: `1px solid ${C.borderStrong}`, color: C.danger }}
                                   >
@@ -1669,10 +1669,7 @@ export default function FichaTecnicaMVP() {
 
                               {col.id === 'produzido' && (
                                 <button
-                                  onClick={() => {
-                                    const motivo = window.prompt('O que aconteceu com esse lote?');
-                                    if (motivo && motivo.trim()) moverLote(pr.id, 'perda', motivo.trim());
-                                  }}
+                                  onClick={() => setModalPerda({ loteId: pr.id, motivo: '' })}
                                   className="mt-2 w-full text-[11px] font-medium py-1.5 rounded-md"
                                   style={{ border: `1px solid ${C.borderStrong}`, color: C.danger }}
                                 >
@@ -2866,6 +2863,48 @@ export default function FichaTecnicaMVP() {
           )}
         </div>
       </main>
+
+      {modalPerda && (
+        <div
+          className="fixed inset-0 flex items-center justify-center p-4"
+          style={{ background: 'rgba(13,13,15,0.45)', zIndex: 50 }}
+          onClick={() => setModalPerda(null)}
+        >
+          <div
+            className="rounded-xl p-5 w-full max-w-sm ftv-panel"
+            style={{ background: C.panel, boxShadow: shadow }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-[14px] font-semibold mb-1">Registrar perda</h3>
+            <p className="text-[12px] mb-3" style={{ color: C.sub }}>O que aconteceu com esse lote? O motivo fica registrado pra investigar depois — perda sem motivo não serve pra nada.</p>
+            <textarea
+              autoFocus
+              value={modalPerda.motivo}
+              onChange={(e) => setModalPerda({ ...modalPerda, motivo: e.target.value })}
+              placeholder="Ex: esqueceu fora da câmara a noite toda, queimou na chapa, validade vencida..."
+              className="text-[12.5px] px-2.5 py-2 rounded-md w-full mb-3"
+              style={{ border: `1px solid ${C.borderStrong}`, background: C.panel, minHeight: 84 }}
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setModalPerda(null)} className="text-[12.5px] font-medium px-3.5 py-1.5 rounded-lg" style={{ border: `1px solid ${C.borderStrong}` }}>
+                Cancelar
+              </button>
+              <button
+                onClick={() => {
+                  if (!modalPerda.motivo.trim()) return;
+                  moverLote(modalPerda.loteId, 'perda', modalPerda.motivo.trim());
+                  setModalPerda(null);
+                }}
+                disabled={!modalPerda.motivo.trim()}
+                className="text-[12.5px] font-medium px-3.5 py-1.5 rounded-lg"
+                style={{ background: C.danger, color: '#fff', opacity: modalPerda.motivo.trim() ? 1 : 0.5 }}
+              >
+                Registrar perda
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
