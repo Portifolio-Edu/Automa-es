@@ -762,6 +762,8 @@ export default function FichaTecnicaMVP() {
   const [destinoVenda, setDestinoVenda] = useState({});
   const [producoes, setProducoes] = useState(producoesBase);
   const [showNovaProducao, setShowNovaProducao] = useState(false);
+  const [loteArrastando, setLoteArrastando] = useState(null); // { colunaOrigem, item }
+  const [colunaAlvo, setColunaAlvo] = useState(null);
   const [estoque, setEstoque] = useState(estoqueBase);
   const [buscaInsumo, setBuscaInsumo] = useState('');
   const [showNovoEstoque, setShowNovoEstoque] = useState(false);
@@ -964,6 +966,33 @@ export default function FichaTecnicaMVP() {
 
   const moverLote = (id, novoStatus, motivo) => {
     setProducoes(producoes.map((p) => (p.id === id ? { ...p, status: novoStatus, ...(motivo ? { motivoPerda: motivo } : {}) } : p)));
+  };
+
+  // Arrastar no quadro segue as mesmas regras dos botões: "estoque" nunca é um
+  // status real (é capacidade calculada), então só se sai dele arrastando pra
+  // "em_producao". Perda sempre pede motivo, arrastando ou clicando, senão o
+  // registro não serve pra investigar nada depois.
+  const transicaoValida = (origem, destino) => {
+    if (origem === destino) return false;
+    if (origem === 'estoque') return destino === 'em_producao';
+    if (origem === 'em_producao') return destino === 'produzido' || destino === 'perda';
+    if (origem === 'produzido') return destino === 'perda';
+    return false;
+  };
+
+  const soltarNaColuna = (destino) => {
+    if (!loteArrastando) return;
+    const { colunaOrigem, item } = loteArrastando;
+    if (!transicaoValida(colunaOrigem, destino)) return;
+
+    if (colunaOrigem === 'estoque' && destino === 'em_producao') {
+      iniciarProducao(item);
+    } else if (destino === 'perda') {
+      const motivo = window.prompt('O que aconteceu com esse lote?');
+      if (motivo && motivo.trim()) moverLote(item.id, 'perda', motivo.trim());
+    } else {
+      moverLote(item.id, destino);
+    }
   };
 
   // ---- agregações dos relatórios ----
@@ -1538,18 +1567,56 @@ export default function FichaTecnicaMVP() {
                     const cards = col.id === 'estoque'
                       ? disponivelProduzir.filter((d) => d.lotes !== null && d.lotes > 0)
                       : producoesEnriquecidas.filter((p) => p.status === col.id);
+                    const podeSoltarAqui = !!loteArrastando && transicaoValida(loteArrastando.colunaOrigem, col.id);
+                    const emHoverValido = colunaAlvo === col.id && podeSoltarAqui;
+                    const emHoverInvalido = colunaAlvo === col.id && !!loteArrastando && !podeSoltarAqui;
                     return (
-                      <div key={col.id} className="rounded-xl p-3" style={{ background: C.bg, border: `1px solid ${C.border}` }}>
+                      <div
+                        key={col.id}
+                        className="rounded-xl p-3 transition-colors"
+                        style={{
+                          background: emHoverValido ? C.accentSoft : C.bg,
+                          border: `1.5px dashed ${emHoverValido ? C.accent : emHoverInvalido ? C.danger : 'transparent'}`,
+                          outline: `1px solid ${emHoverValido || emHoverInvalido ? 'transparent' : C.border}`,
+                          outlineOffset: -1,
+                        }}
+                        onDragOver={(e) => {
+                          if (!loteArrastando) return;
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = podeSoltarAqui ? 'move' : 'none';
+                          if (colunaAlvo !== col.id) setColunaAlvo(col.id);
+                        }}
+                        onDragLeave={() => setColunaAlvo((atual) => (atual === col.id ? null : atual))}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          soltarNaColuna(col.id);
+                          setColunaAlvo(null);
+                        }}
+                      >
                         <div className="flex items-baseline justify-between mb-0.5">
                           <span className="text-[12.5px] font-semibold" style={{ color: col.id === 'perda' && cards.length > 0 ? C.danger : C.text }}>{col.titulo}</span>
                           <span className="text-[12px] font-semibold" style={{ ...nums, color: col.id === 'perda' && cards.length > 0 ? C.danger : C.sub }}>{cards.length}</span>
                         </div>
                         <div className="text-[10.5px] mb-2.5" style={{ color: C.faint }}>{col.desc}</div>
                         <div className="space-y-2">
-                          {cards.length === 0 && <div className="text-[11px] py-2" style={{ color: C.faint }}>Nada aqui.</div>}
+                          {cards.length === 0 && (
+                            <div className="text-[11px] py-2" style={{ color: podeSoltarAqui ? C.accent : C.faint }}>
+                              {podeSoltarAqui ? 'Solte aqui' : 'Nada aqui.'}
+                            </div>
+                          )}
 
                           {col.id === 'estoque' && cards.map((d) => (
-                            <div key={`${d.tipo}-${d.id}`} className="rounded-lg p-2.5 ftv-panel" style={{ border: `1px solid ${C.border}` }}>
+                            <div
+                              key={`${d.tipo}-${d.id}`}
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = 'move';
+                                setLoteArrastando({ colunaOrigem: 'estoque', item: d });
+                              }}
+                              onDragEnd={() => { setLoteArrastando(null); setColunaAlvo(null); }}
+                              className="rounded-lg p-2.5 ftv-panel cursor-grab active:cursor-grabbing"
+                              style={{ border: `1px solid ${C.border}`, opacity: loteArrastando?.item === d ? 0.4 : 1 }}
+                            >
                               <div className="text-[12px] font-medium leading-tight">{d.nome}</div>
                               <div className="text-[10.5px] mt-1" style={{ color: C.sub }}>{d.rendimento}</div>
                               <div className="text-[10.5px] mt-1.5 flex items-baseline gap-1">
@@ -1564,7 +1631,17 @@ export default function FichaTecnicaMVP() {
                           ))}
 
                           {col.id !== 'estoque' && cards.map((pr) => (
-                            <div key={pr.id} className="rounded-lg p-2.5 ftv-panel" style={{ border: `1px solid ${col.id === 'perda' ? C.dangerSoft : C.border}` }}>
+                            <div
+                              key={pr.id}
+                              draggable={col.id !== 'perda'}
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = 'move';
+                                setLoteArrastando({ colunaOrigem: col.id, item: pr });
+                              }}
+                              onDragEnd={() => { setLoteArrastando(null); setColunaAlvo(null); }}
+                              className={col.id !== 'perda' ? 'rounded-lg p-2.5 ftv-panel cursor-grab active:cursor-grabbing' : 'rounded-lg p-2.5 ftv-panel'}
+                              style={{ border: `1px solid ${col.id === 'perda' ? C.dangerSoft : C.border}`, opacity: loteArrastando?.item === pr ? 0.4 : 1 }}
+                            >
                               <div className="text-[10.5px] font-semibold" style={{ ...nums, color: C.sub }}>{pr.lote}</div>
                               <div className="text-[12px] font-medium leading-tight mt-0.5">{pr.nome}</div>
                               <div className="text-[10.5px] mt-1" style={{ ...nums, color: C.sub }}>{pr.quantidade} {pr.unidade} · {pr.responsavel}</div>
