@@ -37,9 +37,13 @@ Next.js · React · TypeScript · Tailwind · shadcn/ui · Recharts · @react-pd
 
 **Fora (decidido):** cobrança/Asaas, WhatsApp/Meta Cloud API, integração com PDV e OCR de nota fiscal — entram depois, com receita e segundo cliente validando a demanda.
 
+## 💻 Código
+O app é implementado num repositório próprio, separado deste portfólio: **[Portifolio-Edu/saas-ficha-tecnica](https://github.com/Portifolio-Edu/saas-ficha-tecnica)**.
+
+Next.js 15 (App Router, TypeScript, Tailwind v4) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, RLS por `cliente_id`) e do motor de cálculo (`src/lib/calculo/`, funções puras com testes unitários). Todo item do menu lateral tem tela funcionando de verdade: auth, CRUD de insumo/receita/preparo base, estoque com fornecedores, produção com kanban, manipulação de proteína, fechamento de CMV com importação de vendas, relatórios, ficha nutricional (com rotulagem e laudo laboratorial), segurança alimentar (temperatura e vínculo com insumos) e checklists de turno. Gera 3 PDFs (ficha de custos, ficha operacional e rótulo nutricional) e tem uma ficha de produção com fotos por receita. Inclui uma rota de demonstração (`/preview`) que roda as telas reais com dados fictícios, sem precisar de login nem banco.
+
 ## 📁 Neste diretório
 - [`mockup/ficha-tecnica-mvp.jsx`](./mockup/ficha-tecnica-mvp.jsx) — especificação viva das telas (React + Recharts), com as 12 abas do produto e as regras de negócio já validadas tela a tela.
-- [`app/`](./app) — projeto Next.js 15 (App Router, TypeScript, Tailwind v4, shadcn/ui) integrado ao Supabase. Dono da migration canônica (`supabase/migrations/`, 27 tabelas, RLS por `auth.uid()`) e do motor de cálculo (`src/lib/calculo/`, funções puras com 39 testes unitários cobrindo a seção 5 do handoff). Todo item do menu lateral do mockup tem tela funcionando de verdade, exceto Configurações: auth, CRUD de insumo/receita/preparo base, estoque com fornecedores, produção com kanban, manipulação de proteína, fechamento de CMV com importação de vendas, relatórios, ficha nutricional (com rotulagem e laudo laboratorial), segurança alimentar (temperatura) e checklists de turno — mesmo visual do mockup em todas. Gera os 3 PDFs da seção 6 do handoff (ficha de custos, ficha operacional e rótulo nutricional com fundo branco/letra preta obrigatórios) direto no navegador, sem servidor.
 
 ## 📈 Status
 MVP completo nas 12 telas do mockup. Próximo passo é validar com cardápio real do piloto (Eduardo) e ajustar o que a operação de verdade pedir — schema e regras de negócio já estão testados, o que falta é o atrito real de uso diário. Ordem de construção, schema completo e todas as fórmulas com regra de teste unitário estão documentados no handoff técnico interno do projeto.
